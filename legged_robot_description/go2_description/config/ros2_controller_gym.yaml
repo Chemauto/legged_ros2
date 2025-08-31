@@ -26,19 +26,20 @@ controller_manager:
 joint_state_broadcaster:
   ros__parameters:
     update_rate: 250
-    joints:
-      - FL_hip_joint
-      - FR_hip_joint
-      - RL_hip_joint
-      - RR_hip_joint
-      - FL_thigh_joint
-      - FR_thigh_joint
-      - RL_thigh_joint
-      - RR_thigh_joint
-      - FL_calf_joint
-      - FR_calf_joint
-      - RL_calf_joint
-      - RR_calf_joint
+    joints: [
+      'FL_hip_joint', 
+      'FL_thigh_joint', 
+      'FL_calf_joint', 
+      'FR_hip_joint', 
+      'FR_thigh_joint', 
+      'FR_calf_joint', 
+      'RL_hip_joint', 
+      'RL_thigh_joint', 
+      'RL_calf_joint', 
+      'RR_hip_joint', 
+      'RR_thigh_joint', 
+      'RR_calf_joint'
+    ]
     interfaces:
       - position
       - velocity
@@ -50,19 +51,20 @@ static_controller:
   ros__parameters:
     update_rate: 50
     traj_time: 5.0  # Time of joint trajectory in seconds
-    joint_names:
-      - FL_hip_joint
-      - FR_hip_joint
-      - RL_hip_joint
-      - RR_hip_joint
-      - FL_thigh_joint
-      - FR_thigh_joint
-      - RL_thigh_joint
-      - RR_thigh_joint
-      - FL_calf_joint
-      - FR_calf_joint
-      - RL_calf_joint
-      - RR_calf_joint
+    joint_names: [
+      'FL_hip_joint', 
+      'FL_thigh_joint', 
+      'FL_calf_joint', 
+      'FR_hip_joint', 
+      'FR_thigh_joint', 
+      'FR_calf_joint', 
+      'RL_hip_joint', 
+      'RL_thigh_joint', 
+      'RL_calf_joint', 
+      'RR_hip_joint', 
+      'RR_thigh_joint', 
+      'RR_calf_joint'
+    ]
     joint_cfg:
       FL_hip_joint:
         kp: 25.0
@@ -134,46 +136,47 @@ rl_controller:
       base_ang_vel:
         clip:
         - 0.0
-        scale: 0.20000000298023224
-        history_length: 5
+        scale: 0.25
+        history_length: 1
       projected_gravity:
         clip:
         - 0.0
         scale: 1.0
-        history_length: 5
+        history_length: 1
       velocity_commands:
         clip:
         - 0.0
         scale: 1.0
-        history_length: 5
+        history_length: 1
       joint_pos:
         clip:
         - 0.0
         scale: 1.0
-        history_length: 5
+        history_length: 1
       joint_vel:
         clip:
         - 0.0
-        scale: 0.05000000074505806
-        history_length: 5
+        scale: 0.05
+        history_length: 1
       actions:
         clip:
         - 0.0
         scale: 1.0
-        history_length: 5
-    joint_names:
-      - FL_hip_joint
-      - FR_hip_joint
-      - RL_hip_joint
-      - RR_hip_joint
-      - FL_thigh_joint
-      - FR_thigh_joint
-      - RL_thigh_joint
-      - RR_thigh_joint
-      - FL_calf_joint
-      - FR_calf_joint
-      - RL_calf_joint
-      - RR_calf_joint
+        history_length: 1
+    joint_names: [
+      'FL_hip_joint', 
+      'FL_thigh_joint', 
+      'FL_calf_joint', 
+      'FR_hip_joint', 
+      'FR_thigh_joint', 
+      'FR_calf_joint', 
+      'RL_hip_joint', 
+      'RL_thigh_joint', 
+      'RL_calf_joint', 
+      'RR_hip_joint', 
+      'RR_thigh_joint', 
+      'RR_calf_joint'
+    ]
     action_cfg:
       FL_hip_joint:
         clip:
@@ -181,42 +184,42 @@ rl_controller:
         scale: 0.25
         kp: 25.0
         kd: 0.5
-        default_pos: 0.10000000149011612
+        default_pos: 0.1
       FR_hip_joint:
         clip:
         - 0.0
         scale: 0.25
         kp: 25.0
         kd: 0.5
-        default_pos: -0.10000000149011612
+        default_pos: -0.1
       RL_hip_joint:
         clip:
         - 0.0
         scale: 0.25
         kp: 25.0
         kd: 0.5
-        default_pos: 0.10000000149011612
+        default_pos: 0.1
       RR_hip_joint:
         clip:
         - 0.0
         scale: 0.25
         kp: 25.0
         kd: 0.5
-        default_pos: -0.10000000149011612
+        default_pos: -0.1
       FL_thigh_joint:
         clip:
         - 0.0
         scale: 0.25
         kp: 25.0
         kd: 0.5
-        default_pos: 0.800000011920929
+        default_pos: 0.8
       FR_thigh_joint:
         clip:
         - 0.0
         scale: 0.25
         kp: 25.0
         kd: 0.5
-        default_pos: 0.800000011920929
+        default_pos: 0.8
       RL_thigh_joint:
         clip:
         - 0.0
