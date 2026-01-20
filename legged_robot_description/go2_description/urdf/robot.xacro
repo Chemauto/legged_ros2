@@ -5,15 +5,15 @@
     <xacro:arg name="DEBUG" default="false"/>
     <xacro:arg name="prefix" default="" />
     <xacro:arg name="enable_sim" default="true" />
-    <xacro:arg name="network_interface" default="lo" />
+    <xacro:arg name="enable_lowlevel_write" default="true" />
 
-    <xacro:include filename="$(find go2_description)/xacro/const.xacro"/>
-    <xacro:include filename="$(find go2_description)/xacro/materials.xacro"/>
-    <xacro:include filename="$(find go2_description)/xacro/leg.xacro"/>
-    <!-- <xacro:include filename="$(find go2_description)/xacro/stairs.xacro"/> -->
-    <xacro:include filename="$(find go2_description)/xacro/gazebo.xacro"/>
+    <xacro:include filename="$(find go2_description)/urdf/const.xacro"/>
+    <xacro:include filename="$(find go2_description)/urdf/materials.xacro"/>
+    <xacro:include filename="$(find go2_description)/urdf/leg.xacro"/>
+    <!-- <xacro:include filename="$(find go2_description)/urdf/stairs.xacro"/> -->
+    <xacro:include filename="$(find go2_description)/urdf/gazebo.xacro"/>
     <!-- <xacro:include filename="$(find go2_gazebo)/launch/stairs.urdf.xacro"/> -->
-    <xacro:include filename="$(find go2_description)/xacro/ros2_control.xacro"/>
+    <xacro:include filename="$(find go2_description)/urdf/ros2_control.xacro"/>
 
     <!-- <xacro:stairs stairs="15" xpos="0" ypos="0" zpos="0" /> -->
 
@@ -96,6 +96,14 @@
         </collision>
     </link>
 
+    <joint name="utlidar_joint" type="fixed">
+        <origin xyz="0.28945 0 -0.046825" rpy="0 2.8782 0" />
+        <parent link="trunk" />
+        <child link="utlidar_link" />
+    </joint>
+    <link name="utlidar_link">
+    </link>
+
     <joint name="front_camera_joint" type="fixed">
         <parent link="trunk"/>
         <child link="front_camera"/>
@@ -140,6 +148,6 @@
     <xacro:go2_ros2_control 
         prefix="$(arg prefix)" 
         enable_sim="$(arg enable_sim)" 
-        network_interface="$(arg network_interface)"/>
+        enable_lowlevel_write="$(arg enable_lowlevel_write)"/>
         
 </robot>

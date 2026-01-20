@@ -18,7 +18,6 @@
   <depend>realtime_tools</depend>
   <depend>sensor_msgs</depend>
   <depend>legged_ros2_controller</depend>
-  <depend>generate_parameter_library</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

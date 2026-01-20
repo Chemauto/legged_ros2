@@ -10,7 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 
 install(
-  DIRECTORY config launch meshes urdf mjcf rviz2 xacro dae
+  DIRECTORY config launch meshes urdf mjcf rviz2 dae
   DESTINATION share/${PROJECT_NAME}
 )
 

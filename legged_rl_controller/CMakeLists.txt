@@ -19,21 +19,14 @@ find_package(legged_ros2_controller REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
-find_package(generate_parameter_library REQUIRED)
 
 get_filename_component(ONNXRUNTIME_ABSOLUTE_PATH "../third_party/onnxruntime-linux-x64-1.22.0" ABSOLUTE)
 list(APPEND CMAKE_PREFIX_PATH "${ONNXRUNTIME_ABSOLUTE_PATH}")
 set(ONNXRUNTIME_INCLUDE_DIRS "${ONNXRUNTIME_ABSOLUTE_PATH}/include")
 set(ONNXRUNTIME_LIBRARIES "${ONNXRUNTIME_ABSOLUTE_PATH}/lib/libonnxruntime.so")
 
-generate_parameter_library(
-  legged_rl_controller_parameters
-  src/legged_rl_controller.yaml
-)
-
 add_library(legged_rl_controller SHARED
   src/legged_rl_controller.cpp
-  src/legged_jump_controller.cpp
 )
 target_compile_features(legged_rl_controller PUBLIC c_std_99 cxx_std_17)
 target_include_directories(legged_rl_controller PUBLIC
@@ -46,7 +39,6 @@ target_include_directories(legged_rl_controller PUBLIC
 target_link_libraries(legged_rl_controller PUBLIC
   ${YAML_CPP_LIBRARIES}
   ${ONNXRUNTIME_LIBRARIES}
-  legged_rl_controller_parameters
 )
 set_target_properties(legged_rl_controller PROPERTIES
     INSTALL_RPATH "${ONNXRUNTIME_ABSOLUTE_PATH}/lib"
@@ -68,7 +60,7 @@ ament_target_dependencies(
 pluginlib_export_plugin_description_file(controller_interface legged_rl_controller_plugins.xml)
 
 install(
-  TARGETS legged_rl_controller legged_rl_controller_parameters
+  TARGETS legged_rl_controller
   EXPORT export_legged_rl_controller
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

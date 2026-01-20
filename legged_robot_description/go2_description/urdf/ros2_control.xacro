@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:macro name="go2_ros2_control" params="prefix enable_sim:=false network_interface:=lo">
+  <xacro:macro name="go2_ros2_control" params="prefix enable_sim:=false enable_lowlevel_write:=true">
 
     <ros2_control name="go2_ros2_control" type="system">
 
@@ -14,7 +14,7 @@
       <xacro:unless value="${enable_sim}">
         <hardware>
           <plugin>legged_ros2_control/Go2SystemInterface</plugin>
-          <param name="network_interface">${network_interface}</param>
+          <param name="enable_lowlevel_write">${enable_lowlevel_write}</param>
         </hardware>
       </xacro:unless>
 

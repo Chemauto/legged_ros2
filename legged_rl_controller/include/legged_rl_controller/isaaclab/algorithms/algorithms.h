@@ -1,191 +1,127 @@
-// Copyright (c) 2025, Unitree Robotics Co., Ltd.
-// All rights reserved.
+/**
+ * @file algorithms.h
+ * @author xiaobaige (zitongbai@outlook.com)
+ * @brief Runner for ONNX models using ONNX Runtime C++ API
+ * @ref This file is adapted from unitree_rl_lab.
+ * @version 0.1
+ * @date 2026-01-16
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
 
 #pragma once
 
 #include "onnxruntime_cxx_api.h"
+#include <cstring>
+#include <iostream>
+#include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
-#include <memory>
-#include <cstring>
 
 namespace isaaclab {
 
 class Algorithms {
- public:
-    virtual ~Algorithms() = default;
-    virtual std::vector<float> act(const std::vector<float>& obs) = 0;
+public:
+  virtual std::vector<float> act(
+    const std::unordered_map<std::string, std::vector<float>> &obs) = 0;
 
-    std::vector<float> get_action() {
-        std::lock_guard<std::mutex> lock(act_mtx_);
-        return action_;
-    }
+  std::vector<float> get_action()
+  {
+    std::lock_guard<std::mutex> lock(act_mtx_);
+    return action;
+  }
 
- protected:
-    std::vector<float> action_;
-    mutable std::mutex act_mtx_;
-};
+  std::vector<float> action;
 
-enum class RNNType {
-    NONE,
-    LSTM,
-    GRU
+protected:
+  std::mutex act_mtx_;
 };
 
 class OrtRunner : public Algorithms {
- public:
-    explicit OrtRunner(const std::string& model_path)
-            : env_(ORT_LOGGING_LEVEL_WARNING, "onnx_model"), rnn_type_(RNNType::NONE) {
-        
-        std::cout << "Loading ONNX model from: " << model_path << std::endl;
+public:
+  explicit OrtRunner(const std::string &model_path)
+  {
+    // Init Model
+    env_ = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "onnx_model");
+    session_options_.SetGraphOptimizationLevel(ORT_ENABLE_EXTENDED);
 
-        session_options_.SetGraphOptimizationLevel(ORT_ENABLE_EXTENDED);
-        session_ = std::make_unique<Ort::Session>(env_, model_path.c_str(), session_options_);
+    session_ = std::make_unique<Ort::Session>(env_, model_path.c_str(), session_options_);
 
-        // get the number of inputs and outputs
-        num_inputs_ = session_->GetInputCount();
-        num_outputs_ = session_->GetOutputCount();
-
-        // get the rnn type based on number of inputs
-        if (num_inputs_ == 1) {
-            rnn_type_ = RNNType::NONE;
-            input_names_ = {"obs"};
-            output_names_ = {"actions"};
-        } else if (num_inputs_ == 2) {
-            rnn_type_ = RNNType::GRU;
-            input_names_ = {"obs", "h_in"};
-            output_names_ = {"actions", "h_out"};
-        } else if (num_inputs_ == 3) {
-            rnn_type_ = RNNType::LSTM;
-            input_names_ = {"obs", "h_in", "c_in"};
-            output_names_ = {"actions", "h_out", "c_out"};
-        } else {
-            throw std::runtime_error("Unsupported model input configuration");
-        }
-
-        // get the shapes of each input and output
-        input_shapes_.resize(num_inputs_);
-        output_shapes_.resize(num_outputs_);
-        
-        for (size_t i = 0; i < num_inputs_; ++i) {
-            Ort::TypeInfo input_type = session_->GetInputTypeInfo(i);
-            input_shapes_[i] = input_type.GetTensorTypeAndShapeInfo().GetShape();
-            std::cout << "Input " << i << " shape: ";
-            for (const auto& dim : input_shapes_[i]) {
-                std::cout << dim << " ";
-            }
-            std::cout << std::endl;
-        }
-        
-        for (size_t i = 0; i < num_outputs_; ++i) {
-            Ort::TypeInfo output_type = session_->GetOutputTypeInfo(i);
-            output_shapes_[i] = output_type.GetTensorTypeAndShapeInfo().GetShape();
-        }
-
-        // initialize action vector
-        action_.resize(output_shapes_[0][1]); 
-
-        // initialize hidden state
-        if (rnn_type_ == RNNType::GRU) {
-            h_state_.resize(input_shapes_[1][0] * input_shapes_[1][1] * input_shapes_[1][2], 0.0f);
-        } else if (rnn_type_ == RNNType::LSTM) {
-            h_state_.resize(input_shapes_[1][0] * input_shapes_[1][1] * input_shapes_[1][2], 0.0f);
-            c_state_.resize(input_shapes_[2][0] * input_shapes_[2][1] * input_shapes_[2][2], 0.0f);
-        }
+    for (size_t i = 0; i < session_->GetInputCount(); ++i) {
+      Ort::TypeInfo input_type = session_->GetInputTypeInfo(i);
+      input_shapes_.push_back(input_type.GetTensorTypeAndShapeInfo().GetShape());
+      auto input_name = session_->GetInputNameAllocated(i, allocator_);
+      input_names_.push_back(input_name.release());
     }
 
-    std::vector<float> act(const std::vector<float>& obs) override {
-        auto memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
-        
-        std::vector<Ort::Value> input_tensors;
-        std::vector<const char*> input_names_ptr;
-        std::vector<const char*> output_names_ptr;
-
-        // prepare input
-        if (rnn_type_ == RNNType::NONE) {
-            input_tensors.push_back(Ort::Value::CreateTensor<float>(
-                memory_info, const_cast<float*>(obs.data()), obs.size(),
-                input_shapes_[0].data(), input_shapes_[0].size()));
-            input_names_ptr = {"obs"};
-            output_names_ptr = {"actions"};
-        } else if (rnn_type_ == RNNType::GRU) {
-            input_tensors.push_back(Ort::Value::CreateTensor<float>(
-                memory_info, const_cast<float*>(obs.data()), obs.size(),
-                input_shapes_[0].data(), input_shapes_[0].size()));
-            input_tensors.push_back(Ort::Value::CreateTensor<float>(
-                memory_info, h_state_.data(), h_state_.size(),
-                input_shapes_[1].data(), input_shapes_[1].size()));
-            input_names_ptr = {"obs", "h_in"};
-            output_names_ptr = {"actions", "h_out"};
-        } else if (rnn_type_ == RNNType::LSTM) {
-            input_tensors.push_back(Ort::Value::CreateTensor<float>(
-                memory_info, const_cast<float*>(obs.data()), obs.size(),
-                input_shapes_[0].data(), input_shapes_[0].size()));
-            input_tensors.push_back(Ort::Value::CreateTensor<float>(
-                memory_info, h_state_.data(), h_state_.size(),
-                input_shapes_[1].data(), input_shapes_[1].size()));
-            input_tensors.push_back(Ort::Value::CreateTensor<float>(
-                memory_info, c_state_.data(), c_state_.size(),
-                input_shapes_[2].data(), input_shapes_[2].size()));
-            input_names_ptr = {"obs", "h_in", "c_in"};
-            output_names_ptr = {"actions", "h_out", "c_out"};
-        }
-
-        // run inference
-        auto output_tensors = session_->Run(
-            Ort::RunOptions{nullptr}, input_names_ptr.data(), input_tensors.data(), 
-            input_tensors.size(), output_names_ptr.data(), output_names_ptr.size());
-
-        // get actions
-        auto actions_data = output_tensors[0].GetTensorMutableData<float>();
-
-        std::lock_guard<std::mutex> lock(act_mtx_);
-        std::memcpy(action_.data(), actions_data, output_shapes_[0][1] * sizeof(float));
-
-        // update hidden state
-        if (rnn_type_ == RNNType::GRU) {
-            auto h_out_data = output_tensors[1].GetTensorMutableData<float>();
-            std::memcpy(h_state_.data(), h_out_data, h_state_.size() * sizeof(float));
-        } else if (rnn_type_ == RNNType::LSTM) {
-            auto h_out_data = output_tensors[1].GetTensorMutableData<float>();
-            auto c_out_data = output_tensors[2].GetTensorMutableData<float>();
-            std::memcpy(h_state_.data(), h_out_data, h_state_.size() * sizeof(float));
-            std::memcpy(c_state_.data(), c_out_data, c_state_.size() * sizeof(float));
-        }
-
-        return action_;
+    for (const auto &shape : input_shapes_) {
+      size_t size = 1;
+      for (const auto &dim : shape) {
+        size *= dim;
+      }
+      input_sizes_.push_back(size);
     }
 
-    // reset hidden states
-    void reset_hidden_states() {
-        if (rnn_type_ != RNNType::NONE) {
-            std::fill(h_state_.begin(), h_state_.end(), 0.0f);
-            if (rnn_type_ == RNNType::LSTM) {
-                std::fill(c_state_.begin(), c_state_.end(), 0.0f);
-            }
-        }
+    // Get output shape
+    Ort::TypeInfo output_type = session_->GetOutputTypeInfo(0);
+    output_shape_ = output_type.GetTensorTypeAndShapeInfo().GetShape();
+    auto output_name = session_->GetOutputNameAllocated(0, allocator_);
+    output_names_.push_back(output_name.release());
+
+    action.resize(output_shape_[1]);
+  }
+
+  std::vector<float> act(
+    const std::unordered_map<std::string, std::vector<float>> &obs) override
+  {
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
+
+    // make sure all input names are in obs
+    for (const auto &name : input_names_) {
+      if (obs.find(name) == obs.end()) {
+        throw std::runtime_error(
+          "Input name " + std::string(name) + " not found in observations.");
+      }
     }
 
- private:
-    Ort::Env env_;
-    Ort::SessionOptions session_options_;
-    std::unique_ptr<Ort::Session> session_;
-    Ort::AllocatorWithDefaultOptions allocator_;
+    // Create input tensors
+    std::vector<Ort::Value> input_tensors;
+    for (size_t i = 0; i < input_names_.size(); ++i) {
+      const std::string name_str(input_names_[i]);
+      auto &input_data = obs.at(name_str);
+      auto *input_ptr = const_cast<float *>(input_data.data());
+      auto input_tensor = Ort::Value::CreateTensor<float>(
+        memory_info, input_ptr, input_sizes_[i], input_shapes_[i].data(),
+        input_shapes_[i].size());
+      input_tensors.push_back(std::move(input_tensor));
+    }
 
-    RNNType rnn_type_;
-    size_t num_inputs_;
-    size_t num_outputs_;
-    
-    std::vector<const char*> input_names_;
-    std::vector<const char*> output_names_;
-    
-    std::vector<std::vector<int64_t>> input_shapes_;
-    std::vector<std::vector<int64_t>> output_shapes_;
-    
-    // hidden states for RNNs
-    std::vector<float> h_state_;  // GRU and LSTM hidden states
-    std::vector<float> c_state_;  // LSTM cell state
+    // Run the model
+    auto output_tensor = session_->Run(
+      Ort::RunOptions{nullptr}, input_names_.data(), input_tensors.data(),
+      input_tensors.size(), output_names_.data(), 1);
+
+    // Copy output data
+    auto floatarr = output_tensor.front().GetTensorMutableData<float>();
+    std::lock_guard<std::mutex> lock(act_mtx_);
+    std::memcpy(action.data(), floatarr, output_shape_[1] * sizeof(float));
+    return action;
+  }
+
+private:
+  Ort::Env env_;
+  Ort::SessionOptions session_options_;
+  std::unique_ptr<Ort::Session> session_;
+  Ort::AllocatorWithDefaultOptions allocator_;
+
+  std::vector<const char *> input_names_;
+  std::vector<const char *> output_names_;
+
+  std::vector<std::vector<int64_t>> input_shapes_;
+  std::vector<int64_t> input_sizes_;
+  std::vector<int64_t> output_shape_;
 };
-
 }  // namespace isaaclab
