@@ -73,10 +73,29 @@ public:
   RCLCPP_SHARED_PTR_DEFINITIONS(LeggedSystemInterface)
   RCLCPP_UNIQUE_PTR_DEFINITIONS(LeggedSystemInterface)
 
+  /**
+   * @brief Initialize the hardware interface with the given hardware information
+   *  The hardware_info is parsed from the ros2_control tag in the robot's URDF file.
+   * 
+   * @param info The hardware information parsed from URDF
+   * @return CallbackReturn 
+   */
   CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
 
+  /**
+   * @brief Export the state interfaces for the hardware interface
+   *  For legged robots, this includes joint states and IMU states
+   * 
+   * @return std::vector<hardware_interface::StateInterface> 
+   */
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
+  /**
+   * @brief Export the command interfaces for the hardware interface
+   *  For legged robots, this includes joint command interfaces
+   * 
+   * @return std::vector<hardware_interface::CommandInterface> 
+   */
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
 protected:

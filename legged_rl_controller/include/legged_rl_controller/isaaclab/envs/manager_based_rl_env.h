@@ -1,135 +1,129 @@
-// Copyright (c) 2025, Unitree Robotics Co., Ltd.
-// All rights reserved.
+/**
+ * @file manager_based_rl_env.h
+ * @author xiaobaige (zitongbai@outlook.com)
+ * @brief A reinforcement learning environment based on observation and action managers.
+ * @ref This file is adapted from unitree_rl_lab.
+ * @version 0.1
+ * @date 2026-01-17
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
 
 #pragma once
 
 #include <eigen3/Eigen/Dense>
+#include <memory>
+#include <stdexcept>
 #include <yaml-cpp/yaml.h>
+
+#include "legged_rl_controller/isaaclab/algorithms/algorithms.h"
+#include "legged_rl_controller/isaaclab/assets/articulation/articulation.h"
 #include "legged_rl_controller/isaaclab/manager/observation_manager.h"
 #include "legged_rl_controller/isaaclab/manager/action_manager.h"
-#include "legged_rl_controller/isaaclab/assets/articulation/articulation.h"
-#include "legged_rl_controller/isaaclab/algorithms/algorithms.h"
-#include <iostream>
-#include <unordered_map>
-#include <any>
-#include <optional>
-#include <stdexcept>
 
-namespace isaaclab
-{
+namespace isaaclab {
+
 class ObservationManager;
 class ActionManager;
 
-struct ManagerBasedRLEnvCfg{
-    std::string policy_net_path;
-    std::vector<std::unique_ptr<ActionConfig>> action_cfgs;
-    std::vector<std::unique_ptr<ObservationTermCfg>> observation_cfgs;
-    std::vector<float> default_joint_pos;
-    std::vector<float> joint_stiffness;
-    std::vector<float> joint_damping;
-    struct CommandVelocityRange {
-        std::array<float, 2U> lin_vel_x = {0.0f, 0.0f};
-        std::array<float, 2U> lin_vel_y = {0.0f, 0.0f};
-        std::array<float, 2U> ang_vel_z = {0.0f, 0.0f};
-    } command_velocity_range;
-
-    // 新增：扩展属性包
-    std::unordered_map<std::string, std::any> extras;
-
-    // 设置扩展值
-    template<typename T>
-    void set_extra(const std::string &key, T value) {
-        extras[key] = std::any(std::move(value));
-    }
-
-    // 获取扩展值（如果不存在或类型不匹配返回 std::nullopt）
-    template<typename T>
-    std::optional<T> get_extra(const std::string &key) const {
-        auto it = extras.find(key);
-        if (it == extras.end()) return std::nullopt;
-        try {
-            return std::any_cast<T>(it->second);
-        } catch (const std::bad_any_cast&) {
-            return std::nullopt;
-        }
-    }
-
-    // 是否存在扩展键
-    bool has_extra(const std::string &key) const {
-        return extras.find(key) != extras.end();
-    }
-
-    // 删除扩展键
-    void remove_extra(const std::string &key) {
-        extras.erase(key);
-    }
-
-};
-
-class ManagerBasedRLEnv
-{
+class ManagerBasedRLEnv {
 public:
-    // Constructor
-    ManagerBasedRLEnv(ManagerBasedRLEnvCfg cfg_, std::shared_ptr<Articulation> robot_)
-    : cfg(std::move(cfg_)), robot(std::move(robot_))
-    {
-        // Parse configuration
-        robot->data.joint_pos.resize(cfg.default_joint_pos.size());
-        robot->data.joint_vel.resize(cfg.default_joint_pos.size());
+  ManagerBasedRLEnv(YAML::Node cfg, std::shared_ptr<Articulation> robot_)
+  : cfg(cfg), robot(std::move(robot_))
+  {
+    const auto scene_node = cfg["scene"];
+    if (!scene_node.IsDefined() || !scene_node["dt"].IsDefined()) {
+      throw std::runtime_error("Config missing 'scene.dt'.");
+    }
+    step_dt = scene_node["dt"].as<float>();
 
-        { // default joint positions
-            robot->data.default_joint_pos = Eigen::VectorXf::Map(cfg.default_joint_pos.data(), cfg.default_joint_pos.size());
-        }
-        { // joint stiffness and damping
-            robot->data.joint_stiffness = cfg.joint_stiffness;
-            robot->data.joint_damping = cfg.joint_damping;
-        }
-        { // command velocity ranges
-            robot->data.command.range.lin_vel_x = cfg.command_velocity_range.lin_vel_x;
-            robot->data.command.range.lin_vel_y = cfg.command_velocity_range.lin_vel_y;
-            robot->data.command.range.ang_vel_z = cfg.command_velocity_range.ang_vel_z;
-        }
+    const auto articulations_node = cfg["articulations"];
+    if (!articulations_node.IsDefined() || !articulations_node["robot"].IsDefined()) {
+      throw std::runtime_error("Config missing 'articulations.robot'.");
+    }
+    const auto robot_node = articulations_node["robot"];
+    if (!robot_node["joint_names"].IsDefined()) {
+      throw std::runtime_error("Config missing 'articulations.robot.joint_names'.");
+    }
+    const auto joint_names = robot_node["joint_names"].as<std::vector<std::string>>();
+    robot->data.joint_names = joint_names;
+    robot->data.joint_pos.resize(joint_names.size());
+    robot->data.joint_vel.resize(joint_names.size());
 
-        // load managers
-        action_manager = std::make_unique<ActionManager>(std::move(cfg.action_cfgs), this);
-        observation_manager = std::make_unique<ObservationManager>(std::move(cfg.observation_cfgs), this);
+    {  // default joint positions and velocities
+      if (!robot_node["default_joint_pos"].IsDefined()) {
+        throw std::runtime_error("Config missing 'articulations.robot.default_joint_pos'.");
+      }
+      auto default_joint_pos = robot_node["default_joint_pos"].as<std::vector<float>>();
+      if (default_joint_pos.size() != joint_names.size()) {
+        throw std::runtime_error(
+          "Size mismatch: default_joint_pos vs joint_names.");
+      }
+      robot->data.default_joint_pos =
+        Eigen::VectorXf::Map(default_joint_pos.data(), default_joint_pos.size());
 
-        // load algorithm
-        if (!cfg.policy_net_path.empty()) {
-            alg = std::make_unique<OrtRunner>(cfg.policy_net_path);
-        } else {
-            std::cerr << "Warning: No policy network path provided, using default algorithm." << std::endl;
-        }
+      if (!robot_node["default_joint_vel"].IsDefined()) {
+        throw std::runtime_error("Config missing 'articulations.robot.default_joint_vel'.");
+      }
+      auto default_joint_vel = robot_node["default_joint_vel"].as<std::vector<float>>();
+      if (default_joint_vel.size() != joint_names.size()) {
+        throw std::runtime_error(
+          "Size mismatch: default_joint_vel vs joint_names.");
+      }
+      robot->data.default_joint_vel =
+        Eigen::VectorXf::Map(default_joint_vel.data(), default_joint_vel.size());
+    }
+    {  // joint stiffness and damping
+      if (!robot_node["default_joint_stiffness"].IsDefined()) {
+        throw std::runtime_error("Config missing 'articulations.robot.default_joint_stiffness'.");
+      }
+      if (!robot_node["default_joint_damping"].IsDefined()) {
+        throw std::runtime_error("Config missing 'articulations.robot.default_joint_damping'.");
+      }
+      robot->data.joint_stiffness = robot_node["default_joint_stiffness"].as<std::vector<float>>();
+      robot->data.joint_damping = robot_node["default_joint_damping"].as<std::vector<float>>();
+      if (robot->data.joint_stiffness.size() != joint_names.size()) {
+        throw std::runtime_error(
+          "Size mismatch: default_joint_stiffness vs joint_names.");
+      }
+      if (robot->data.joint_damping.size() != joint_names.size()) {
+        throw std::runtime_error(
+          "Size mismatch: default_joint_damping vs joint_names.");
+      }
     }
 
-    void reset()
-    {
-        robot->update();
-        global_phase = 0;
-        episode_length = 0;
-        episode_length_s = 0;
-        action_manager->reset();
-        observation_manager->reset();
-    }
+    // Load managers.
+    action_manager = std::make_unique<ActionManager>(cfg, this);
+    observation_manager = std::make_unique<ObservationManager>(cfg, this);
+  }
 
-    void step(double period)
-    {
-        episode_length += 1;
-        episode_length_s += period;
-        robot->update();
-        auto obs = observation_manager->compute();
-        auto action = alg->act(obs);
-        action_manager->process_action(action);
-    }
+  void reset()
+  {
+    global_phase = 0.0f;
+    episode_length = 0;
+    robot->update();
+    action_manager->reset();
+    observation_manager->reset();
+  }
 
-    ManagerBasedRLEnvCfg cfg;
-    std::unique_ptr<ObservationManager> observation_manager;
-    std::unique_ptr<ActionManager> action_manager;
-    std::shared_ptr<Articulation> robot;
-    std::unique_ptr<Algorithms> alg;
-    long episode_length = 0;
-    double episode_length_s = 0;
-    float global_phase = 0.0f;
+  void step()
+  {
+    episode_length += 1;
+    robot->update();
+    auto obs = observation_manager->compute();
+    auto action = alg->act(obs);
+    action_manager->process_action(action);
+  }
+
+  float step_dt;
+  YAML::Node cfg;
+  std::unique_ptr<ObservationManager> observation_manager;
+  std::unique_ptr<ActionManager> action_manager;
+  std::shared_ptr<Articulation> robot;
+  std::unique_ptr<Algorithms> alg;
+  long episode_length = 0;
+  float global_phase = 0.0f;
 };
 
-};
+}  // namespace isaaclab

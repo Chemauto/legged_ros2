@@ -21,7 +21,7 @@ namespace legged
 {
 LeggedRos2Control::LeggedRos2Control(rclcpp::Node::SharedPtr node) : 
   node_(node), 
-  logger_(rclcpp::get_logger(node_->get_name()+std::string(".legged_ros2_control")))
+  logger_(rclcpp::get_logger(node_->get_name()+std::string(".legged_ros2_control"))) // TODO: change logger name
 {
 }
 
@@ -78,11 +78,11 @@ void LeggedRos2Control::init()
 
   clock_publisher_ = node_->create_publisher<rosgraph_msgs::msg::Clock>("/clock", 10);
 
-  urdf_string_ = this->get_robot_description_();
+  // ------------------------------------------------------------------
+  // Get the robot description from parameter or topic
+  // ------------------------------------------------------------------
 
-  // in the default usage of ros2 control, the controlller manager is responsible for 
-  // parsing the hardware info from URDF and load the components
-  // But here we will do it manually
+  urdf_string_ = this->get_robot_description_();
 
   // Parse the URDF string to get the control hardware info
   std::vector<hardware_interface::HardwareInfo> hardware_info;
@@ -93,6 +93,13 @@ void LeggedRos2Control::init()
     return ;
   }
 
+  // ------------------------------------------------------------------
+  // Prepeare the resource manager
+  //  * Load URDF to resource manager
+  //  * Import components according to hardware info
+  // ------------------------------------------------------------------
+  
+  RCLCPP_INFO_STREAM(logger_, "Creating resource manager...");
 
   // Create resource manager
   std::unique_ptr<hardware_interface::ResourceManager> resource_manager = 
@@ -109,15 +116,27 @@ void LeggedRos2Control::init()
   // Import components according to the hardware info
   import_components_(hardware_info, resource_manager);
 
-  // Create the controller manager
-  RCLCPP_INFO(logger_, "Loading controller manager...");
+  RCLCPP_INFO_STREAM(logger_, "Resource manager successfully created.");
+
+  // ------------------------------------------------------------------
+  // Prepeare the controller manager
+  // ------------------------------------------------------------------
+
+  RCLCPP_INFO(logger_, "Creating controller manager...");
+
   cm_executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
   std::string manager_node_name = "controller_manager";
   controller_manager_ = std::make_shared<controller_manager::ControllerManager>(
     std::move(resource_manager), cm_executor_, manager_node_name, node_->get_namespace());
   cm_executor_->add_node(controller_manager_);
   cm_executor_->add_node(node_);
-  
+
+  RCLCPP_INFO(logger_, "Controller manager successfully created.");
+
+  // ------------------------------------------------------------------
+  // Set the update loop for the controller manager
+  // ------------------------------------------------------------------
+
   const bool use_sim_time = controller_manager_->get_parameter_or<bool>("use_sim_time", false);
   RCLCPP_INFO(
     logger_, "Controller manager using simulation time: %s", use_sim_time ? "true" : "false");

@@ -1,76 +1,123 @@
-// Copyright (c) 2025, Unitree Robotics Co., Ltd.
-// All rights reserved.
+/**
+ * @file joint_actions.h
+ * @author xiaobaige (zitongbai@outlook.com)
+ * @brief 
+ * @version 0.1
+ * @date 2026-01-17
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
 
 #pragma once
 
 #include <eigen3/Eigen/Dense>
+#include <stdexcept>
 #include <yaml-cpp/yaml.h>
-
 #include "legged_rl_controller/isaaclab/envs/manager_based_rl_env.h"
 #include "legged_rl_controller/isaaclab/manager/action_manager.h"
 
-namespace isaaclab {
+namespace isaaclab
+{
 
-struct JointActionConfig : public ActionConfig {
-    std::vector<float> scale;
-    std::vector<float> offset;
-    std::vector<std::vector<float>> clip;
-};
-
-class JointAction : public ActionTerm {
- public:
-    JointAction(std::unique_ptr<JointActionConfig> cfg, ManagerBasedRLEnv* env)
-            : ActionTerm(std::move(cfg), env),
-                num_joints_(env->robot->data.default_joint_pos.size()),
-                raw_actions_(num_joints_, 0.0f),
-                processed_actions_(num_joints_, 0.0f) {
-
-        auto * typed_cfg = static_cast<JointActionConfig*>(cfg_.get());
-        scale_ = typed_cfg->scale;
-        offset_ = typed_cfg->offset;
-        if (!typed_cfg->clip.empty()) {
-            clip_ = typed_cfg->clip;
+class JointAction : public ActionTerm
+{
+public:
+    JointAction(YAML::Node cfg, ManagerBasedRLEnv* env)
+    : ActionTerm(cfg, env)
+    {
+        if (!cfg["joint_names"].IsDefined()) {
+            throw std::runtime_error("Action config missing 'joint_names'.");
         }
-    }
-
-    void process_actions(const std::vector<float>& actions) {
-        raw_actions_ = actions;
-        for (int i = 0; i < num_joints_; ++i) {
-            processed_actions_[i] = raw_actions_[i] * scale_[i] + offset_[i];
+        joint_names_ = cfg["joint_names"].as<std::vector<std::string>>();
+        if (joint_names_.empty()) {
+            throw std::runtime_error("Action config 'joint_names' is empty.");
         }
-        if (!clip_.empty()) {
-            for (int i = 0; i < num_joints_; ++i) {
-                processed_actions_[i] =
-                        std::clamp(processed_actions_[i], clip_[i][0], clip_[i][1]);
+        action_dim_ = static_cast<int>(joint_names_.size());
+        raw_actions_.assign(action_dim_, 0.0f);
+        processed_actions_.assign(action_dim_, 0.0f);
+
+        if (cfg["scale"].IsDefined() && !cfg["scale"].IsNull()) {
+            if (cfg["scale"].IsSequence()) {
+                scale_ = cfg["scale"].as<std::vector<float>>();
+            } else {
+                scale_.assign(action_dim_, cfg["scale"].as<float>());
+            }
+            if (scale_.size() != static_cast<size_t>(action_dim_)) {
+                throw std::runtime_error("Action config 'scale' size mismatch.");
+            }
+        }
+        if (cfg["offset"].IsDefined() && !cfg["offset"].IsNull()) {
+            if (cfg["offset"].IsSequence()) {
+                offset_ = cfg["offset"].as<std::vector<float>>();
+            } else {
+                offset_.assign(action_dim_, cfg["offset"].as<float>());
+            }
+            if (offset_.size() != static_cast<size_t>(action_dim_)) {
+                throw std::runtime_error("Action config 'offset' size mismatch.");
             }
         }
     }
 
-    int action_dim() { return num_joints_; }
+    void process_actions(std::vector<float> actions) override
+    {
+        if (actions.size() != static_cast<size_t>(action_dim_)) {
+            throw std::runtime_error("Action size mismatch with joint_names.");
+        }
+        raw_actions_ = std::move(actions);
+        for (int i = 0; i < action_dim_; ++i) {
+            float value = raw_actions_[i];
+            if (!scale_.empty()) {
+                value *= scale_[i];
+            }
+            if (!offset_.empty()) {
+                value += offset_[i];
+            }
+            processed_actions_[i] = value;
+        }
+    }
 
-    std::vector<float> raw_actions() { return raw_actions_; }
 
-    std::vector<float> processed_actions() { return processed_actions_; }
+    int action_dim() override
+    {
+        return action_dim_;
+    }
 
-    void reset() { raw_actions_.assign(num_joints_, 0.0f); }
+    std::vector<float> raw_actions() override
+    {
+        return raw_actions_;
+    }
+    
+    std::vector<float> processed_actions() override
+    {
+        return processed_actions_;
+    }
 
- protected:
-    int num_joints_;
+    void reset() override
+    {
+        raw_actions_.assign(action_dim_, 0.0f);
+        processed_actions_.assign(action_dim_, 0.0f);
+    }
 
+protected:
+    int action_dim_;
+    std::vector<std::string> joint_names_;
     std::vector<float> raw_actions_;
     std::vector<float> processed_actions_;
-
     std::vector<float> scale_;
     std::vector<float> offset_;
-    std::vector<std::vector<float>> clip_;
 };
 
-class JointPositionAction : public JointAction {
+// The name of the class must match the action name in IO_descriptors.yaml
+// So the format does not obey the usual naming convention
+class joint_position_action: public JointAction{
 public:
-    JointPositionAction(std::unique_ptr<JointActionConfig> cfg, ManagerBasedRLEnv* env)
-            : JointAction(std::move(cfg), env) {}
+    joint_position_action(YAML::Node cfg, ManagerBasedRLEnv* env)
+    :JointAction(cfg, env)
+    {
+    }
 };
 
-REGISTER_ACTION(JointPositionAction, JointActionConfig);
+REGISTER_ACTION(joint_position_action);
 
-}  // namespace isaaclab
+};

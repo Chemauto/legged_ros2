@@ -1,0 +1,22 @@
+go2_wireless_controller:
+  ros__parameters:
+    cmd_vel:
+      scale:
+        lin_vel_x: 1.0
+        lin_vel_y: 0.8
+        ang_vel_z: 1.0
+    controller_bindings:
+      # Slot mapping:
+      # 1: LB + A
+      # 2: LB + B
+      # 3: LB + X
+      # 4: LB + Y
+      # 5: LS + A
+      # 6: LS + B
+      # 7: LS + X
+      # 8: LS + Y
+      # 9: LB + RB (off)
+      stand_static_controller: 1
+      sit_static_controller: 2
+      rl_controller: 3
+      off: 9

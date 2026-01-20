@@ -12,6 +12,7 @@
 #pragma once
 
 #include <limits>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -107,6 +108,12 @@ public:
   std::vector<double> get_joint_position() const {
     std::vector<double> positions;
     positions.reserve(joint_num_);
+    const size_t expected = joint_num_ * 3;
+    if (state_interfaces_.size() < expected) {
+      std::cerr << "[JointInterface] get_joint_position: state_interfaces size="
+                << state_interfaces_.size() << " expected=" << expected << "\n";
+      return positions;
+    }
     for(size_t i=0; i<joint_num_; i++){
       positions.push_back(state_interfaces_[3*i].get().get_value());
     }
@@ -116,6 +123,12 @@ public:
   std::vector<double> get_joint_velocity() const {
     std::vector<double> velocities;
     velocities.reserve(joint_num_);
+    const size_t expected = joint_num_ * 3;
+    if (state_interfaces_.size() < expected) {
+      std::cerr << "[JointInterface] get_joint_velocity: state_interfaces size="
+                << state_interfaces_.size() << " expected=" << expected << "\n";
+      return velocities;
+    }
     for(size_t i=0; i<joint_num_; i++){
       velocities.push_back(state_interfaces_[3*i+1].get().get_value());
     }
@@ -125,6 +138,12 @@ public:
   std::vector<double> get_joint_effort() const {
     std::vector<double> efforts;
     efforts.reserve(joint_num_);
+    const size_t expected = joint_num_ * 3;
+    if (state_interfaces_.size() < expected) {
+      std::cerr << "[JointInterface] get_joint_effort: state_interfaces size="
+                << state_interfaces_.size() << " expected=" << expected << "\n";
+      return efforts;
+    }
     for(size_t i=0; i<joint_num_; i++){
       efforts.push_back(state_interfaces_[3*i+2].get().get_value());
     }

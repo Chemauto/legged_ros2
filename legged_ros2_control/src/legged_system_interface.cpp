@@ -44,8 +44,7 @@ CallbackReturn LeggedSystemInterface::on_init(const hardware_interface::Hardware
       joint_data_[i].tau_range_[1] = std::numeric_limits<double>::infinity();
     }
 
-    RCLCPP_INFO(*logger_, "Joint %zu: %s with torque range [%f, %f]",
-                i, joint_data_[i].name.c_str(), joint_data_[i].tau_range_[0], joint_data_[i].tau_range_[1]);
+    RCLCPP_INFO(*logger_, "Joint %zu: %s", i, joint_data_[i].name.c_str());
   }
 
   imu_data_.resize(info.sensors.size());
@@ -60,7 +59,6 @@ CallbackReturn LeggedSystemInterface::on_init(const hardware_interface::Hardware
   }
 
   return CallbackReturn::SUCCESS;
-
 }
 
 std::vector<hardware_interface::StateInterface> LeggedSystemInterface::export_state_interfaces()

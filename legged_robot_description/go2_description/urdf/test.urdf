@@ -283,7 +283,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://go2_description/meshes/trunk.dae" scale="1 1 1"/>
+        <mesh filename="package://go2_description/meshes/base.dae" scale="1 1 1"/>
       </geometry>
       <!-- <material name="orange"/> -->
     </visual>
@@ -331,6 +331,19 @@
   </joint>
   <link name="front_camera">
     </link>
+  <link name="utlidar_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="utlidar_joint" type="fixed">
+    <origin rpy="0 2.8782 0" xyz="0.28945 0 -0.046825"/>
+    <parent link="trunk"/>
+    <child link="utlidar_link"/>
+    <axis xyz="0 0 0"/>
+  </joint>
   <joint name="FR_hip_joint" type="revolute">
     <origin rpy="0 0 0" xyz="0.1934 -0.0465 0"/>
     <parent link="trunk"/>
