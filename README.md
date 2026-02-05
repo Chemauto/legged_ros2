@@ -4,11 +4,9 @@
 
 ROS 2 packages for the control, simulation, and deployment of legged robots. 
 
-## Sim2Sim / Sim2Real Tips
-
-* Order of joints
-* `armature` of joint in mujoco model (refer to [armature in mujoco doc](https://mujoco.readthedocs.io/en/stable/XMLreference.html#body-joint-armature))
-* IMU mounting position and orientation
-* Joint limits (RL policy might exploit the joint limits, if the real robot has different joint limits, the policy might not work well)
-
-
+- For installation instructions, please refer to the [Installation Guide](docs/installation.md). 
+- For usage instructions, please refer to the [Usage Guide](docs/usage.md). 
+- For system overview and module responsibilities, please refer to the [Architecture Guide](docs/architecture.md).
+- For mapping setup with FAST-LIO 2 and MID360, please refer to the [Mapping Guide](docs/mapping.md).
+- For extending the stack to a new robot, please refer to [How to Add a New Robot](docs/add_new_robot.md).
+- For RL observation/action/model integration details, please refer to [RL Customization Guide](docs/rl_customization.md).
