@@ -5,6 +5,7 @@
 
     <ros2_control name="go2_ros2_control" type="system">
 
+      <!-- This plugin has been deprecated, so enable_sim should always be false -->
       <xacro:if value="${enable_sim}">
         <hardware>
           <plugin>legged_ros2_control/MujocoSystemInterface</plugin>
@@ -261,8 +262,6 @@
       </sensor>
 
     </ros2_control>
-
-
 
   </xacro:macro>
 

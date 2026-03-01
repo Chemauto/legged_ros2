@@ -3,3 +3,8 @@
     <description>ROS2 system interface for unitree Go2</description>
   </class>
 </library>
+<library path="g1_system_interface">
+  <class name="legged_ros2_control/G1SystemInterface" type="legged::G1SystemInterface" base_class_type="legged::LeggedSystemInterface">
+    <description>ROS2 system interface for unitree G1</description>
+  </class>
+</library>
