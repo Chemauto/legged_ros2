@@ -41,6 +41,11 @@ target_compile_definitions(legged_system_interface PRIVATE "LEGGED_ROS2_CONTROL_
 # ------------------------------------------------------------
 add_subdirectory(src/robots/unitree_go2)
 
+# ------------------------------------------------------------
+# For unitree g1
+# ------------------------------------------------------------
+add_subdirectory(src/robots/unitree_g1)
+
 
 # ------------------------------------------------------------
 # Export hardware plugins
