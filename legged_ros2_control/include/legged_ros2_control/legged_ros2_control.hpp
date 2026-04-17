@@ -17,11 +17,12 @@
 #include <string>
 
 #include "controller_manager/controller_manager.hpp"
-#include "pluginlib/class_loader.hpp"
+// <!-- #########jazzy########## -->
+// #include "pluginlib/class_loader.hpp"
+// #include "legged_ros2_control/legged_system_interface.hpp"
+// <!-- #########jazzy########## -->
 #include "rclcpp/rclcpp.hpp"
 #include "rosgraph_msgs/msg/clock.hpp"
-
-#include "legged_ros2_control/legged_system_interface.hpp"
 
 namespace legged {
 
@@ -33,12 +34,10 @@ public:
 
   /**
    * @brief Initialize the controller manager and resource manager
-   * 
-   * In the default usage of ros2 control, the controlller manager is 
-   * responsible for parsing the hardware info from URDF and load the 
-   * components. But here we will do it manually.
-   * 
-   * We do this to have more control of the initialization process.
+   *
+   * In the default usage of ros2 control, the controller manager is
+   * responsible for parsing the hardware info from URDF and loading
+   * the components.
    */
   void init();
 
@@ -49,20 +48,18 @@ public:
 protected:
   std::string urdf_string_;
   std::string get_robot_description_();
-
-  /**
-   * @brief Import components into the resource manager according to the hardware info
-   * 
-   * @param hardware_info 
-   * @param resource_manager 
-   */
-  virtual void import_components_(std::vector<hardware_interface::HardwareInfo> &hardware_info, 
-                        std::unique_ptr<hardware_interface::ResourceManager> &resource_manager);
+  // <!-- #########jazzy########## -->
+  // 当前分支旧代码:
+  // virtual void import_components_(
+  //   std::vector<hardware_interface::HardwareInfo> &hardware_info,
+  //   std::unique_ptr<hardware_interface::ResourceManager> &resource_manager);
+  // <!-- #########jazzy########## -->
 
   rclcpp::Node::SharedPtr node_;
   rclcpp::Logger logger_;
-
-  std::shared_ptr<pluginlib::ClassLoader<LeggedSystemInterface>> system_interface_loader_;
+  // <!-- #########jazzy########## -->
+  // std::shared_ptr<pluginlib::ClassLoader<LeggedSystemInterface>> system_interface_loader_;
+  // <!-- #########jazzy########## -->
 
   int update_rate_;
   std::shared_ptr<controller_manager::ControllerManager> controller_manager_;

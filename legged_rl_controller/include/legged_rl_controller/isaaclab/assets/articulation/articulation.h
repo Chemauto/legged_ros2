@@ -60,6 +60,11 @@ struct ArticulationData
         } range;
     } velocity_command;
 
+    // <!-- #########new########## -->
+    // 新代码,加入高程图
+    std::vector<float> height_scan;
+    // <!-- #########new########## -->
+
 };
 
 class Articulation

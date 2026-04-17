@@ -1,10 +1,22 @@
 <library path="go2_system_interface">
-  <class name="legged_ros2_control/Go2SystemInterface" type="legged::Go2SystemInterface" base_class_type="legged::LeggedSystemInterface">
+  <!-- #########jazzy########## -->
+  <!-- <class name="legged_ros2_control/Go2SystemInterface" type="legged::Go2SystemInterface" base_class_type="legged::LeggedSystemInterface"> -->
+  <!-- #########jazzy########## -->
+  <!-- #########new########## -->
+  <!-- 新代码,使用jazzy版本 -->
+  <class name="legged_ros2_control/Go2SystemInterface" type="legged::Go2SystemInterface" base_class_type="hardware_interface::SystemInterface">
+  <!-- #########new########## -->
     <description>ROS2 system interface for unitree Go2</description>
   </class>
 </library>
 <library path="g1_system_interface">
-  <class name="legged_ros2_control/G1SystemInterface" type="legged::G1SystemInterface" base_class_type="legged::LeggedSystemInterface">
+  <!-- #########jazzy########## -->
+  <!-- <class name="legged_ros2_control/G1SystemInterface" type="legged::G1SystemInterface" base_class_type="legged::LeggedSystemInterface"> -->
+  <!-- #########jazzy########## -->
+  <!-- #########new########## -->
+  <!-- 新代码,使用jazzy版本 -->
+  <class name="legged_ros2_control/G1SystemInterface" type="legged::G1SystemInterface" base_class_type="hardware_interface::SystemInterface">
+  <!-- #########new########## -->
     <description>ROS2 system interface for unitree G1</description>
   </class>
 </library>

@@ -21,7 +21,13 @@ namespace legged
 {
 
 
-class HARDWARE_INTERFACE_PUBLIC Go2SystemInterface : public LeggedSystemInterface
+// <!-- #########jazzy########## -->
+// class HARDWARE_INTERFACE_PUBLIC Go2SystemInterface : public LeggedSystemInterface
+// <!-- #########jazzy########## -->
+// <!-- #########new########## -->
+// 新代码,使用jazzy版本
+class LEGGED_ROS2_CONTROL_PUBLIC Go2SystemInterface : public LeggedSystemInterface
+// <!-- #########new########## -->
 {
 
 public:
@@ -46,4 +52,3 @@ protected:
 
 
 }
-

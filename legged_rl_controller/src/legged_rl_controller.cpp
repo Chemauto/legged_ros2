@@ -20,6 +20,32 @@
 #include "legged_rl_controller/isaaclab/envs/mdp/actions/joint_actions.h"
 #include "legged_rl_controller/isaaclab/envs/mdp/observations/observations.h"
 
+// <!-- #########new########## -->
+// 新代码,加入高程图
+namespace {
+void ensure_observations_registered()
+{
+  auto & m = isaaclab::observations_map();
+  if (m.find("height_scan") == m.end()) {
+    m["height_scan"] = [](isaaclab::ManagerBasedRLEnv * env, YAML::Node params)
+      -> std::vector<float> {
+      size_t expected_dim = 0;
+      if (params["params"]["expected_dim"]) {
+        expected_dim = params["params"]["expected_dim"].as<size_t>();
+      }
+
+      const auto & source = env->robot->data.height_scan;
+      if (!source.empty() && source.size() == expected_dim) {
+        return source;
+      }
+
+      return std::vector<float>(expected_dim, 0.0f);
+    };
+  }
+}
+}  // namespace
+// <!-- #########new########## -->
+
 namespace legged
 {
 
@@ -103,6 +129,16 @@ controller_interface::CallbackReturn LeggedRLController::on_configure(
       cmd_vel_buffer_->writeFromNonRT(msg);
     });
 
+  // <!-- #########new########## -->
+  // 新代码,加入高程图
+  heightmap_buffer_ = std::make_shared<HeightMapBuffer>();
+  heightmap_sub_ = get_node()->create_subscription<unitree_go::msg::HeightMap>(
+    "/heightmap", rclcpp::SystemDefaultsQoS(),
+    [this](const unitree_go::msg::HeightMap::SharedPtr msg) {
+      heightmap_buffer_->writeFromNonRT(msg);
+    });
+  // <!-- #########new########## -->
+
   robot_ = std::make_shared<LeggedArticulation>(
     imu_interfaces_[0], joint_interface_, cmd_vel_buffer_); // Use the first IMU interface
 
@@ -125,6 +161,10 @@ controller_interface::CallbackReturn LeggedRLController::on_configure(
   set_range(range_ang_vel_z, robot_->data.velocity_command.range.ang_vel_z);
 
   try {
+    // <!-- #########new########## -->
+    // 新代码,加入高程图
+    ensure_observations_registered();
+    // <!-- #########new########## -->
     env_ = std::make_unique<isaaclab::ManagerBasedRLEnv>(env_cfg, robot_);
     env_->alg = std::make_unique<isaaclab::OrtRunner>(onnx_model_path_);
   } catch (const std::exception &e) {
@@ -148,6 +188,12 @@ controller_interface::CallbackReturn LeggedRLController::on_activate(
   if (cmd_vel_buffer_) {
     cmd_vel_buffer_->reset();
   }
+  // <!-- #########new########## -->
+  // 新代码,加入高程图
+  if (heightmap_buffer_) {
+    heightmap_buffer_->reset();
+  }
+  // <!-- #########new########## -->
   if (env_) {
     env_->reset();
   }
@@ -184,6 +230,17 @@ controller_interface::return_type LeggedRLController::update(
   }
 
   try {
+    // <!-- #########new########## -->
+    // 新代码,加入高程图
+    auto heightmap_msg = *heightmap_buffer_->readFromRT();
+    if (heightmap_msg) {
+      robot_->data.height_scan.assign(
+        heightmap_msg->data.begin(), heightmap_msg->data.end());
+    } else {
+      robot_->data.height_scan.clear();
+    }
+    // <!-- #########new########## -->
+
     env_->step();
     auto action = env_->action_manager->processed_actions();
     if (action.size() != joint_names_.size()) {

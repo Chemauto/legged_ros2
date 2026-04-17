@@ -144,6 +144,15 @@ def generate_launch_description():
         "onnx_model_path": onnx_model_path,
         "io_descriptors_path": io_descriptors_path,
     }
+    # <!-- #########new########## -->
+    # 新代码,使用jazzy版本
+    rl_controller_ros_args = [
+        "--ros-args -p onnx_model_path:=",
+        onnx_model_path,
+        " -p io_descriptors_path:=",
+        io_descriptors_path,
+    ]
+    # <!-- #########new########## -->
 
     main_loop_node = Node(
         package="legged_ros2_control",
@@ -194,31 +203,96 @@ def generate_launch_description():
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        arguments=[
+            # <!-- #########jazzy########## -->
+            # "joint_state_broadcaster", "--controller-manager", "/controller_manager",
+            # <!-- #########jazzy########## -->
+            # <!-- #########new########## -->
+            # 新代码,使用jazzy版本
+            "joint_state_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+            "-p",
+            controller_config_path,
+            # <!-- #########new########## -->
+        ],
     )
 
     imu_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["imu_state_broadcaster", "--controller-manager", "/controller_manager"],
+        arguments=[
+            # <!-- #########jazzy########## -->
+            # "imu_state_broadcaster", "--controller-manager", "/controller_manager",
+            # <!-- #########jazzy########## -->
+            # <!-- #########new########## -->
+            # 新代码,使用jazzy版本
+            "imu_state_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+            "-p",
+            controller_config_path,
+            # <!-- #########new########## -->
+        ],
     )
 
     rl_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["rl_controller", "-c", "/controller_manager", "--inactive"],
+        arguments=[
+            # <!-- #########jazzy########## -->
+            # "rl_controller", "-c", "/controller_manager", "--inactive",
+            # <!-- #########jazzy########## -->
+            # <!-- #########new########## -->
+            # 新代码,使用jazzy版本
+            "rl_controller",
+            "-c",
+            "/controller_manager",
+            "--inactive",
+            "-p",
+            controller_config_path,
+            "--controller-ros-args",
+            rl_controller_ros_args,
+            # <!-- #########new########## -->
+        ],
     )
 
     stand_static_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["stand_static_controller", "-c", "/controller_manager", "--inactive"],
+        arguments=[
+            # <!-- #########jazzy########## -->
+            # "stand_static_controller", "-c", "/controller_manager", "--inactive",
+            # <!-- #########jazzy########## -->
+            # <!-- #########new########## -->
+            # 新代码,使用jazzy版本
+            "stand_static_controller",
+            "-c",
+            "/controller_manager",
+            "--inactive",
+            "-p",
+            controller_config_path,
+            # <!-- #########new########## -->
+        ],
     )
 
     sit_static_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["sit_static_controller", "-c", "/controller_manager", "--inactive"],
+        arguments=[
+            # <!-- #########jazzy########## -->
+            # "sit_static_controller", "-c", "/controller_manager", "--inactive",
+            # <!-- #########jazzy########## -->
+            # <!-- #########new########## -->
+            # 新代码,使用jazzy版本
+            "sit_static_controller",
+            "-c",
+            "/controller_manager",
+            "--inactive",
+            "-p",
+            controller_config_path,
+            # <!-- #########new########## -->
+        ],
     )
 
     delay_after_stand_static_controller_spawner = RegisterEventHandler(

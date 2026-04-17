@@ -18,6 +18,10 @@
   <depend>realtime_tools</depend>
   <depend>sensor_msgs</depend>
   <depend>legged_ros2_controller</depend>
+  <!-- #########new########## -->
+  <!-- 新代码,加入高程图 -->
+  <depend>unitree_go</depend>
+  <!-- #########new########## -->
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

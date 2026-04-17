@@ -126,5 +126,12 @@ return_type G1SystemInterface::write(const rclcpp::Time & /*time*/, const rclcpp
 } // namespace legged
 
 #include "pluginlib/class_list_macros.hpp"
+// <!-- #########jazzy########## -->
+// PLUGINLIB_EXPORT_CLASS(
+//   legged::G1SystemInterface, legged::LeggedSystemInterface)
+// <!-- #########jazzy########## -->
+// <!-- #########new########## -->
+// 新代码,使用jazzy版本
 PLUGINLIB_EXPORT_CLASS(
-  legged::G1SystemInterface, legged::LeggedSystemInterface)
+  legged::G1SystemInterface, hardware_interface::SystemInterface)
+// <!-- #########new########## -->

@@ -21,7 +21,13 @@ namespace legged
 {
 
 
-class HARDWARE_INTERFACE_PUBLIC G1SystemInterface : public LeggedSystemInterface
+// <!-- #########jazzy########## -->
+// class HARDWARE_INTERFACE_PUBLIC G1SystemInterface : public LeggedSystemInterface
+// <!-- #########jazzy########## -->
+// <!-- #########new########## -->
+// 新代码,使用jazzy版本
+class LEGGED_ROS2_CONTROL_PUBLIC G1SystemInterface : public LeggedSystemInterface
+// <!-- #########new########## -->
 {
 
 public:

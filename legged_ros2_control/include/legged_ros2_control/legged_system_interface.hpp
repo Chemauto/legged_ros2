@@ -67,7 +67,13 @@ struct ImuData{
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-class HARDWARE_INTERFACE_PUBLIC LeggedSystemInterface : public hardware_interface::SystemInterface
+// <!-- #########jazzy########## -->
+// class HARDWARE_INTERFACE_PUBLIC LeggedSystemInterface : public hardware_interface::SystemInterface
+// <!-- #########jazzy########## -->
+// <!-- #########new########## -->
+// 新代码,使用jazzy版本
+class LEGGED_ROS2_CONTROL_PUBLIC LeggedSystemInterface : public hardware_interface::SystemInterface
+// <!-- #########new########## -->
 {
 public:
   RCLCPP_SHARED_PTR_DEFINITIONS(LeggedSystemInterface)
@@ -111,5 +117,4 @@ protected:
 };
 
 }  // namespace legged
-
 

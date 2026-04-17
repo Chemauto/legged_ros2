@@ -124,5 +124,12 @@ return_type Go2SystemInterface::write(const rclcpp::Time & /*time*/, const rclcp
 } // namespace legged
 
 #include "pluginlib/class_list_macros.hpp"
+// <!-- #########jazzy########## -->
+// PLUGINLIB_EXPORT_CLASS(
+//   legged::Go2SystemInterface, legged::LeggedSystemInterface)
+// <!-- #########jazzy########## -->
+// <!-- #########new########## -->
+// 新代码,使用jazzy版本
 PLUGINLIB_EXPORT_CLASS(
-  legged::Go2SystemInterface, legged::LeggedSystemInterface)
+  legged::Go2SystemInterface, hardware_interface::SystemInterface)
+// <!-- #########new########## -->

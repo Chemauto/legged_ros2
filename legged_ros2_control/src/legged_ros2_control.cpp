@@ -10,8 +10,6 @@
  */
 
 #include "hardware_interface/component_parser.hpp"
-#include "hardware_interface/resource_manager.hpp"
-#include "hardware_interface/system_interface.hpp"
 #include "realtime_tools/realtime_helpers.hpp"
 
 #include "legged_ros2_control/legged_ros2_control.hpp"
@@ -84,40 +82,6 @@ void LeggedRos2Control::init()
 
   urdf_string_ = this->get_robot_description_();
 
-  // Parse the URDF string to get the control hardware info
-  std::vector<hardware_interface::HardwareInfo> hardware_info;
-  try{
-    hardware_info = hardware_interface::parse_control_resources_from_urdf(urdf_string_);
-  }catch (const std::runtime_error & ex){
-    RCLCPP_ERROR_STREAM(logger_, "Error parsing hardware info from URDF: " << ex.what());
-    return ;
-  }
-
-  // ------------------------------------------------------------------
-  // Prepeare the resource manager
-  //  * Load URDF to resource manager
-  //  * Import components according to hardware info
-  // ------------------------------------------------------------------
-  
-  RCLCPP_INFO_STREAM(logger_, "Creating resource manager...");
-
-  // Create resource manager
-  std::unique_ptr<hardware_interface::ResourceManager> resource_manager = 
-    std::make_unique<hardware_interface::ResourceManager>();
-
-  // Parse urdf in resource manager
-  try{
-    resource_manager->load_urdf(urdf_string_, false, false); // Do not validate interfaces and do not load components
-  }catch (const std::runtime_error & ex){
-    RCLCPP_ERROR_STREAM(logger_, "Error loading URDF in resource manager: " << ex.what());
-    return;
-  }
-
-  // Import components according to the hardware info
-  import_components_(hardware_info, resource_manager);
-
-  RCLCPP_INFO_STREAM(logger_, "Resource manager successfully created.");
-
   // ------------------------------------------------------------------
   // Prepeare the controller manager
   // ------------------------------------------------------------------
@@ -126,8 +90,24 @@ void LeggedRos2Control::init()
 
   cm_executor_ = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
   std::string manager_node_name = "controller_manager";
+  // <!-- #########jazzy########## -->
+  // 当前分支旧代码:
+  // auto hardware_info = hardware_interface::parse_control_resources_from_urdf(urdf_string_);
+  // auto resource_manager = std::make_unique<hardware_interface::ResourceManager>();
+  // resource_manager->load_urdf(urdf_string_, false, false);
+  // import_components_(hardware_info, resource_manager);
+  // controller_manager_ = std::make_shared<controller_manager::ControllerManager>(
+  //   std::move(resource_manager), cm_executor_, manager_node_name, node_->get_namespace());
+  // <!-- #########jazzy########## -->
+  // <!-- #########new########## -->
+  // 新代码,使用jazzy版本
+  auto controller_manager_options = controller_manager::get_cm_node_options();
+  controller_manager_options.arguments(
+    {"--ros-args", "-r", "/robot_description:=/controller_manager/ignored_robot_description"});
   controller_manager_ = std::make_shared<controller_manager::ControllerManager>(
-    std::move(resource_manager), cm_executor_, manager_node_name, node_->get_namespace());
+    cm_executor_, urdf_string_, true, manager_node_name, node_->get_namespace(),
+    controller_manager_options);
+  // <!-- #########new########## -->
   cm_executor_->add_node(controller_manager_);
   cm_executor_->add_node(node_);
 
@@ -193,16 +173,29 @@ void LeggedRos2Control::init()
       } // end if has_realtime
 
       const auto period = std::chrono::nanoseconds(1'000'000'000 / update_rate_);
-      const auto cm_now = std::chrono::nanoseconds(this->controller_manager_->now().nanoseconds());
-      std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> next_iteration_time{cm_now};
-
-      rclcpp::Time previous_time = this->controller_manager_->now();
+      // <!-- #########jazzy########## -->
+      // const auto cm_now = std::chrono::nanoseconds(this->controller_manager_->now().nanoseconds());
+      // std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> next_iteration_time{cm_now};
+      // rclcpp::Time previous_time = this->controller_manager_->now();
+      // <!-- #########jazzy########## -->
+      // <!-- #########new########## -->
+      // 新代码,使用jazzy版本
+      auto trigger_clock = this->controller_manager_->get_trigger_clock();
+      auto next_iteration_time = std::chrono::steady_clock::now();
+      rclcpp::Time previous_time = trigger_clock->now();
+      // <!-- #########new########## -->
       rclcpp::Duration period_duration = rclcpp::Duration::from_nanoseconds(period.count());
       rclcpp::Duration period_error_threshold = rclcpp::Duration::from_nanoseconds(0.1 * period.count()); // 10% threshold
 
       while(rclcpp::ok()){
         // calculate measured period
-        const auto current_time = this->controller_manager_->now();
+        // <!-- #########jazzy########## -->
+        // const auto current_time = this->controller_manager_->now();
+        // <!-- #########jazzy########## -->
+        // <!-- #########new########## -->
+        // 新代码,使用jazzy版本
+        const auto current_time = trigger_clock->now();
+        // <!-- #########new########## -->
         const auto measured_period = current_time - previous_time;
         previous_time = current_time;
 
@@ -223,7 +216,13 @@ void LeggedRos2Control::init()
         // }
 
         if(use_sim_time){ // TODO: check sim time
-          this->controller_manager_->get_clock()->sleep_until(current_time + period);
+          // <!-- #########jazzy########## -->
+          // this->controller_manager_->get_clock()->sleep_until(current_time + period);
+          // <!-- #########jazzy########## -->
+          // <!-- #########new########## -->
+          // 新代码,使用jazzy版本
+          trigger_clock->sleep_until(current_time + period);
+          // <!-- #########new########## -->
         } else {
           std::this_thread::sleep_until(next_iteration_time);
         }
@@ -255,38 +254,15 @@ void LeggedRos2Control::update(const rclcpp::Time &time, const rclcpp::Duration 
   this->controller_manager_->write(time, period);
 }
 
-void LeggedRos2Control::import_components_(std::vector<hardware_interface::HardwareInfo> &hardware_info, 
-                        std::unique_ptr<hardware_interface::ResourceManager> &resource_manager)
-{
-  // Create the system interface loader
-  try{
-    system_interface_loader_.reset(new pluginlib::ClassLoader<LeggedSystemInterface>(
-      "legged_ros2_control", "legged::LeggedSystemInterface"));
-  }catch (const pluginlib::PluginlibException & ex) {
-    RCLCPP_ERROR_STREAM(logger_, "Failed to create hardware interface loader:  " << ex.what());
-    return;
-  }
-
-  // Import components according to the hardware info
-  for(const auto & hw_info: hardware_info){
-    std::string hw_class_type = hw_info.hardware_class_type;
-    LeggedSystemInterface::UniquePtr system_interface;
-    try{
-      system_interface = LeggedSystemInterface::UniquePtr(
-        system_interface_loader_->createUnmanagedInstance(hw_class_type));
-    }catch (const pluginlib::PluginlibException & ex) {
-      RCLCPP_ERROR_STREAM(logger_, "Failed to create system interface for " << hw_class_type << ": " << ex.what());
-      continue;
-    }
-
-    resource_manager->import_component(std::move(system_interface), hw_info);
-
-    rclcpp_lifecycle::State state(
-      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE, 
-      hardware_interface::lifecycle_state_names::ACTIVE);
-    resource_manager->set_component_state(hw_info.name, state);
-  }
-}
+// <!-- #########jazzy########## -->
+// 当前分支旧代码:
+// void LeggedRos2Control::import_components_(
+//   std::vector<hardware_interface::HardwareInfo> &hardware_info,
+//   std::unique_ptr<hardware_interface::ResourceManager> &resource_manager)
+// {
+//   ...
+// }
+// <!-- #########jazzy########## -->
 
 
 

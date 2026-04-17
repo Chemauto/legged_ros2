@@ -10,3 +10,14 @@ ROS 2 packages for the control, simulation, and deployment of legged robots.
 - For mapping setup with FAST-LIO 2 and MID360, please refer to the [Mapping Guide](docs/mapping.md).
 - For extending the stack to a new robot, please refer to [How to Add a New Robot](docs/add_new_robot.md).
 - For RL observation/action/model integration details, please refer to [RL Customization Guide](docs/rl_customization.md).
+
+## Chinese Docs
+
+- 安装指南: [中文](docs/installation_zh.md)
+- 使用指南: [中文](docs/usage_zh.md)
+- 架构说明: [中文](docs/architecture_zh.md)
+- 建图指南: [中文](docs/mapping_zh.md)
+- 新增机器人指南: [中文](docs/add_new_robot_zh.md)
+- RL 定制指南: [中文](docs/rl_customization_zh.md)
+- 杂项说明: [中文](docs/misc_zh.md)
+- 补充草稿: [中文](docs/temp_zh.md)

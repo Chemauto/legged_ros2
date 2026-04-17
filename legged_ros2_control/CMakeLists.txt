@@ -50,7 +50,13 @@ add_subdirectory(src/robots/unitree_g1)
 # ------------------------------------------------------------
 # Export hardware plugins
 # ------------------------------------------------------------
-pluginlib_export_plugin_description_file(legged_ros2_control legged_ros2_control_plugins.xml)
+# <!-- #########jazzy########## -->
+# pluginlib_export_plugin_description_file(legged_ros2_control legged_ros2_control_plugins.xml)
+# <!-- #########jazzy########## -->
+# <!-- #########new########## -->
+# 新代码,使用jazzy版本
+pluginlib_export_plugin_description_file(hardware_interface legged_ros2_control_plugins.xml)
+# <!-- #########new########## -->
 
 
 # ------------------------------------------------------------

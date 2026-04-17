@@ -17,6 +17,10 @@
 
 #include "realtime_tools/realtime_buffer.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+// <!-- #########new########## -->
+// 新代码,加入高程图
+#include "unitree_go/msg/height_map.hpp"
+// <!-- #########new########## -->
 
 #include "legged_ros2_controller/legged_ros2_controller.hpp"
 
@@ -52,6 +56,14 @@ protected:
   using CmdBuffer = realtime_tools::RealtimeBuffer<TwistMsgSharedPtr>;
   std::shared_ptr<CmdBuffer> cmd_vel_buffer_;
   TwistMsgSharedPtr cmd_vel_msg_;
+
+  // <!-- #########new########## -->
+  // 新代码,加入高程图
+  rclcpp::Subscription<unitree_go::msg::HeightMap>::SharedPtr heightmap_sub_;
+  using HeightMapMsgSharedPtr = std::shared_ptr<unitree_go::msg::HeightMap>;
+  using HeightMapBuffer = realtime_tools::RealtimeBuffer<HeightMapMsgSharedPtr>;
+  std::shared_ptr<HeightMapBuffer> heightmap_buffer_;
+  // <!-- #########new########## -->
 
   std::unique_ptr<isaaclab::ManagerBasedRLEnv> env_;
   std::shared_ptr<isaaclab::Articulation> robot_;

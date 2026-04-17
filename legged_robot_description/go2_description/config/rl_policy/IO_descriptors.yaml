@@ -173,7 +173,13 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      history_length: 5
+      # <!-- #########jazzy########## -->
+      # history_length: 5
+      # <!-- #########jazzy########## -->
+      # <!-- #########new########## -->
+      # 新代码,使用副本RL配置
+      history_length: 0
+      # <!-- #########new########## -->
       scale: null
     shape:
     - 3
@@ -193,7 +199,13 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      history_length: 5
+      # <!-- #########jazzy########## -->
+      # history_length: 5
+      # <!-- #########jazzy########## -->
+      # <!-- #########new########## -->
+      # 新代码,使用副本RL配置
+      history_length: 0
+      # <!-- #########new########## -->
       scale: null
     shape:
     - 3
@@ -209,7 +221,13 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      history_length: 5
+      # <!-- #########jazzy########## -->
+      # history_length: 5
+      # <!-- #########jazzy########## -->
+      # <!-- #########new########## -->
+      # 新代码,使用副本RL配置
+      history_length: 0
+      # <!-- #########new########## -->
       scale: null
     shape:
     - 3
@@ -253,7 +271,13 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      history_length: 5
+      # <!-- #########jazzy########## -->
+      # history_length: 5
+      # <!-- #########jazzy########## -->
+      # <!-- #########new########## -->
+      # 新代码,使用副本RL配置
+      history_length: 0
+      # <!-- #########new########## -->
       scale: null
     shape:
     - 12
@@ -297,7 +321,13 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      history_length: 5
+      # <!-- #########jazzy########## -->
+      # history_length: 5
+      # <!-- #########jazzy########## -->
+      # <!-- #########new########## -->
+      # 新代码,使用副本RL配置
+      history_length: 0
+      # <!-- #########new########## -->
       scale: null
     shape:
     - 12
@@ -314,10 +344,38 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      history_length: 5
+      # <!-- #########jazzy########## -->
+      # history_length: 5
+      # <!-- #########jazzy########## -->
+      # <!-- #########new########## -->
+      # 新代码,使用副本RL配置
+      history_length: 0
+      # <!-- #########new########## -->
       scale: null
     shape:
     - 12
+  # <!-- #########new########## -->
+  # 新代码,加入高程图
+  - dtype: torch.float32
+    extras:
+      description: Height scan from heightmap around the robot.
+      modifiers: null
+    full_path: isaaclab.envs.mdp.observations.height_scan
+    mdp_type: Observation
+    name: height_scan
+    observation_type: HeightScan
+    overloads:
+      clip:
+      - -1.0
+      - 1.0
+      flatten_history_dim: true
+      history_length: 0
+      scale: null
+    params:
+      expected_dim: 187
+    shape:
+    - 187
+  # <!-- #########new########## -->
 scene:
   decimation: 4
   dt: 0.02

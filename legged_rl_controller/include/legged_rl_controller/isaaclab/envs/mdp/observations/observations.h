@@ -110,6 +110,24 @@ REGISTER_OBSERVATION(generated_commands)
     return obs;
 }
 
+// <!-- #########new########## -->
+// 新代码,加入高程图
+REGISTER_OBSERVATION(height_scan)
+{
+    size_t expected_dim = 0;
+    if (params["params"]["expected_dim"]) {
+        expected_dim = params["params"]["expected_dim"].as<size_t>();
+    }
+
+    const auto & source = env->robot->data.height_scan;
+    if (!source.empty() && source.size() == expected_dim) {
+        return source;
+    }
+
+    return std::vector<float>(expected_dim, 0.0f);
+}
+// <!-- #########new########## -->
+
 
 }
 }

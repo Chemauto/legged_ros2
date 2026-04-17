@@ -16,6 +16,10 @@ find_package(legged_ros2_control REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(legged_ros2_controller REQUIRED)
+## <!-- #########new########## -->
+## 新代码,加入高程图
+find_package(unitree_go REQUIRED)
+## <!-- #########new########## -->
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
@@ -55,6 +59,10 @@ ament_target_dependencies(
   realtime_tools
   sensor_msgs
   legged_ros2_controller
+  ## <!-- #########new########## -->
+  ## 新代码,加入高程图
+  unitree_go
+  ## <!-- #########new########## -->
 )
 
 pluginlib_export_plugin_description_file(controller_interface legged_rl_controller_plugins.xml)
