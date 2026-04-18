@@ -1,6 +1,6 @@
 # legged_ros2
 
-[![Ubuntu 20.04/22.04](https://img.shields.io/badge/Ubuntu-22.04-blue.svg?logo=ubuntu)](https://ubuntu.com/) [![ROS2 Humble](https://img.shields.io/badge/ROS2-Humble-blue.svg?logo=ros)](https://docs.ros.org/en/humble/index.html)
+[![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04-blue.svg?logo=ubuntu)](https://ubuntu.com/) [![ROS2 Jazzy](https://img.shields.io/badge/ROS2-Jazzy-blue.svg?logo=ros)](https://docs.ros.org/en/jazzy/index.html)
 
 ROS 2 packages for the control, simulation, and deployment of legged robots. 
 
