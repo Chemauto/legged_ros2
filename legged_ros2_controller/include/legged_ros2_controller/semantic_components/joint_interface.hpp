@@ -194,11 +194,21 @@ public:
     }
     
     for(size_t i=0; i<joint_num_; i++){
-      command_interfaces_[5*i].get().set_value(pos[i]);
-      command_interfaces_[5*i+1].get().set_value(vel[i]);
-      command_interfaces_[5*i+2].get().set_value(ff[i]);
-      command_interfaces_[5*i+3].get().set_value(kp[i]);
-      command_interfaces_[5*i+4].get().set_value(kd[i]);
+      // <!-- #########jazzy########## -->
+      // command_interfaces_[5*i].get().set_value(pos[i]);
+      // command_interfaces_[5*i+1].get().set_value(vel[i]);
+      // command_interfaces_[5*i+2].get().set_value(ff[i]);
+      // command_interfaces_[5*i+3].get().set_value(kp[i]);
+      // command_interfaces_[5*i+4].get().set_value(kd[i]);
+      // <!-- #########jazzy########## -->
+      // <!-- #########new########## -->
+      // 新代码,使用jazzy版本
+      command_interfaces_[5*i].get().set_value(static_cast<double>(pos[i]));
+      command_interfaces_[5*i+1].get().set_value(static_cast<double>(vel[i]));
+      command_interfaces_[5*i+2].get().set_value(static_cast<double>(ff[i]));
+      command_interfaces_[5*i+3].get().set_value(static_cast<double>(kp[i]));
+      command_interfaces_[5*i+4].get().set_value(static_cast<double>(kd[i]));
+      // <!-- #########new########## -->
     }
   }
 
