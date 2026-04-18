@@ -35,11 +35,23 @@ void ensure_observations_registered()
       }
 
       const auto & source = env->robot->data.height_scan;
-      if (!source.empty() && source.size() == expected_dim) {
+      // <!-- #########jazzy########## -->
+      // if (!source.empty() && source.size() == expected_dim) {
+      //   return source;
+      // }
+      // return std::vector<float>(expected_dim, 0.0f);
+      // <!-- #########jazzy########## -->
+      // <!-- #########new########## -->
+      // 新代码,加入高程图
+      if (expected_dim == 0U) {
         return source;
       }
 
-      return std::vector<float>(expected_dim, 0.0f);
+      std::vector<float> obs(expected_dim, 0.0f);
+      const size_t copy_dim = std::min(expected_dim, source.size());
+      std::copy_n(source.begin(), copy_dim, obs.begin());
+      return obs;
+      // <!-- #########new########## -->
     };
   }
 }

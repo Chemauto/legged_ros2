@@ -203,7 +203,13 @@ rl_controller:
     ]
     imu_names: # only use one imu for RL observation
       - imu # refer to ros2 control xacro file
-    cmd_vel_topic: "cmd_vel"
+    # <!-- #########jazzy########## -->
+    # cmd_vel_topic: "cmd_vel"
+    # <!-- #########jazzy########## -->
+    # <!-- #########new########## -->
+    # 新代码,使用jazzy版本
+    cmd_vel_topic: "rl_cmd_vel"
+    # <!-- #########new########## -->
     cmd_vel_range_lin_vel_x: [-1.0, 1.0]  # m/s
     cmd_vel_range_lin_vel_y: [-1.0, 1.0]  # m/s
     cmd_vel_range_ang_vel_z: [-3.14, 3.14]  # rad/s

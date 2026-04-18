@@ -101,6 +101,31 @@ ros2 control switch_controllers -c /controller_manager \
 - 不要在 `--strict` 模式下去停用一个本来就是 `inactive` 的控制器，否则整次切换会失败。
 - 如果当前没有任何运动控制器是 `active`，通常只写 `--activate` 即可。
 
+### 命令行发送速度指令
+
+当前配置中，`rl_controller` 默认订阅的话题是 `/rl_cmd_vel`，不是 `/cmd_vel`。这样可以避免与 `go2_wireless_controller` 持续发布的 `/cmd_vel` 冲突。
+
+确认 `rl_controller` 已经是 `active` 后，可以直接发送速度指令：
+
+```bash
+ros2 topic pub -r 10 /rl_cmd_vel geometry_msgs/msg/Twist \
+"{linear: {x: 0.2, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+```
+
+原地转向示例：
+
+```bash
+ros2 topic pub -r 10 /rl_cmd_vel geometry_msgs/msg/Twist \
+"{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.6}}"
+```
+
+停止示例：
+
+```bash
+ros2 topic pub --once /rl_cmd_vel geometry_msgs/msg/Twist \
+"{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+```
+
 ## 真机运行
 
 下面所有操作默认都在 **PC 端** 完成，而不是机器人板载电脑。
