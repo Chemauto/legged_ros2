@@ -209,6 +209,7 @@ rl_controller:
     # <!-- #########new########## -->
     # 新代码,使用jazzy版本
     cmd_vel_topic: "rl_cmd_vel"
+    
     # <!-- #########new########## -->
     cmd_vel_range_lin_vel_x: [-1.0, 1.0]  # m/s
     cmd_vel_range_lin_vel_y: [-1.0, 1.0]  # m/s

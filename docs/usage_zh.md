@@ -14,7 +14,7 @@
    按实际情况修改 `unitree_mujoco/simulate/config.yaml`。通常需要把 `use_joystick` 改为 `1`。  
    > `unitree_mujoco` 默认使用 `ROS_DOMAIN_ID=1`，请确保运行 ROS 2 节点的终端使用相同的 `ROS_DOMAIN_ID`：
    > ```bash
-   > export ROS_DOMAIN_ID=1
+   > export ROS_DOMAIN_ID=0
    > ```
 3. **启动仿真**
    在 `unitree_mujoco/simulate/build` 下运行：
@@ -25,11 +25,11 @@
 4. **启动控制**
    打开新终端，source `legged_ros2` 工作区并启动控制节点：
    ```bash
-   cd ~/legged_ws
-   source path/to/unitree_ros2/setup_local.sh
+   cd /home/xcj/work/IsaacLab/legged_ws
+   source /home/xcj/work/unitree/unitree_ros2/setup_local.sh
    colcon build --packages-select legged_ros2_control legged_ros2_controller legged_rl_controller go2_description --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
-   source ~/legged_ws/install/setup.bash
-   export ROS_DOMAIN_ID=1
+   source /home/xcj/work/IsaacLab/legged_ws/install/setup.bash
+   export ROS_DOMAIN_ID=0
    ros2 launch go2_description bringup_rl.launch.py use_rviz:=true use_rqt_cm:=true
    ```
 
@@ -73,8 +73,8 @@ LB + RB: 停止所有控制器
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source path/to/unitree_ros2/setup_local.sh
-source ~/legged_ws/install/setup.bash
+source /home/xcj/work/unitree/unitree_ros2/setup_local.sh
+source /home/xcj/work/IsaacLab/legged_ws/install/setup.bash
 ros2 control list_hardware_components
 ros2 control list_controllers
 ```
