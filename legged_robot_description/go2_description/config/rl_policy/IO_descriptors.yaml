@@ -1,6 +1,30 @@
 actions:
 - action_type: JointAction
-  clip: null
+  clip:
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
+  - - -100.0
+    - 100.0
   dtype: torch.float32
   extras:
     description: Joint action term that applies the processed actions to the articulation's
@@ -34,7 +58,19 @@ actions:
   - -1.5
   - -1.5
   - -1.5
-  scale: 0.25
+  scale:
+  - 0.20000000298023224
+  - 0.20000000298023224
+  - 0.20000000298023224
+  - 0.20000000298023224
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
   shape:
   - 12
 articulations:
@@ -66,18 +102,18 @@ articulations:
     - 0.5
     - 0.5
     default_joint_friction:
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
-    - 0.009999999776482582
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
     default_joint_pos:
     - 0.10000000149011612
     - -0.10000000149011612
@@ -173,13 +209,7 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      # <!-- #########jazzy########## -->
-      # history_length: 5
-      # <!-- #########jazzy########## -->
-      # <!-- #########new########## -->
-      # 新代码,使用副本RL配置
       history_length: 0
-      # <!-- #########new########## -->
       scale: null
     shape:
     - 3
@@ -199,13 +229,7 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      # <!-- #########jazzy########## -->
-      # history_length: 5
-      # <!-- #########jazzy########## -->
-      # <!-- #########new########## -->
-      # 新代码,使用副本RL配置
       history_length: 0
-      # <!-- #########new########## -->
       scale: null
     shape:
     - 3
@@ -221,13 +245,7 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      # <!-- #########jazzy########## -->
-      # history_length: 5
-      # <!-- #########jazzy########## -->
-      # <!-- #########new########## -->
-      # 新代码,使用副本RL配置
       history_length: 0
-      # <!-- #########new########## -->
       scale: null
     shape:
     - 3
@@ -271,14 +289,20 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      # <!-- #########jazzy########## -->
-      # history_length: 5
-      # <!-- #########jazzy########## -->
-      # <!-- #########new########## -->
-      # 新代码,使用副本RL配置
       history_length: 0
-      # <!-- #########new########## -->
-      scale: null
+      scale:
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
     shape:
     - 12
   - dtype: torch.float32
@@ -321,13 +345,7 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      # <!-- #########jazzy########## -->
-      # history_length: 5
-      # <!-- #########jazzy########## -->
-      # <!-- #########new########## -->
-      # 新代码,使用副本RL配置
       history_length: 0
-      # <!-- #########new########## -->
       scale: null
     shape:
     - 12
@@ -344,18 +362,10 @@ observations:
     overloads:
       clip: null
       flatten_history_dim: true
-      # <!-- #########jazzy########## -->
-      # history_length: 5
-      # <!-- #########jazzy########## -->
-      # <!-- #########new########## -->
-      # 新代码,使用副本RL配置
       history_length: 0
-      # <!-- #########new########## -->
       scale: null
     shape:
     - 12
-  # <!-- #########new########## -->
-  # 新代码,加入高程图
   - dtype: torch.float32
     extras:
       description: Height scan from heightmap around the robot.
@@ -375,7 +385,6 @@ observations:
       expected_dim: 187
     shape:
     - 187
-  # <!-- #########new########## -->
 scene:
   decimation: 4
   dt: 0.02
