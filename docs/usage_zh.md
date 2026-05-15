@@ -154,10 +154,10 @@ ros2 topic pub --once /rl_cmd_vel geometry_msgs/msg/Twist \
 2. **启动控制栈**
    在新的终端中执行：
    ```bash
-   cd ~/legged_ws
-   source path/to/unitree_ros2/setup.sh
+   cd /home/xcj/work/IsaacLab/legged_ws
+   source /home/xcj/work/unitree/unitree_ros2/setup.sh
    colcon build --packages-select legged_ros2_control legged_ros2_controller legged_rl_controller go2_description --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
-   source ~/legged_ws/install/setup.bash
+   source /home/xcj/work/IsaacLab/legged_ws/install/setup.bash
    ros2 launch go2_description bringup_rl.launch.py use_rviz:=true use_rqt_cm:=true
    ```
 
