@@ -88,7 +88,7 @@
     发布速度命令测试 RL 控制：
 
     ```bash
-    ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2, y: 0.0, z: 0.0}, angular: {z: 0.0}}"
+    ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 1.0, y: 0.0, z: 0.0}, angular: {z: 0.0}}"
     ```
 
     检查是否有底层控制命令输出：
