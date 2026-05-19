@@ -17,6 +17,7 @@
 
 #include "realtime_tools/realtime_buffer.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 
 #include "legged_ros2_controller/legged_ros2_controller.hpp"
 
@@ -58,6 +59,11 @@ protected:
 
   std::string onnx_model_path_;
   std::string io_descriptors_path_;
+
+  // Heightmap subscription
+  rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr heightmap_sub_;
+  using HeightMapBuffer = realtime_tools::RealtimeBuffer<std::vector<float>>;
+  std::shared_ptr<HeightMapBuffer> heightmap_buffer_;
 
 };
 

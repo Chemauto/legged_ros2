@@ -110,6 +110,20 @@ REGISTER_OBSERVATION(generated_commands)
     return obs;
 }
 
+REGISTER_OBSERVATION(height_scan)
+{
+    auto & asset = env->robot;
+    auto & data = asset->data.height_scan;
+    size_t expected_dim = data.size();
+    if (params["expected_dim"].IsDefined()) {
+        expected_dim = params["expected_dim"].as<size_t>();
+    }
+    std::vector<float> obs(expected_dim, 0.0f);
+    size_t copy_len = std::min(data.size(), expected_dim);
+    std::copy(data.begin(), data.begin() + copy_len, obs.begin());
+    return obs;
+}
+
 
 }
 }

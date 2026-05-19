@@ -186,11 +186,11 @@ sleep "${FAST_LIO_DELAY_SEC}"
 echo "Opening Terminal 3: lidar static TF"
 open_terminal "mapping: lidar static TF" "${STATIC_TF_CMD}" "03_lidar_static_tf"
 
-echo "Waiting ${STATIC_TF_DELAY_SEC}s before starting broadcasters"
-sleep "${STATIC_TF_DELAY_SEC}"
+# echo "Waiting ${STATIC_TF_DELAY_SEC}s before starting broadcasters"
+# sleep "${STATIC_TF_DELAY_SEC}"
 
-echo "Opening Terminal 4: broadcasters"
-open_terminal "mapping: broadcasters" "${RVIZ_CMD}" "04_broadcasters"
+# echo "Opening Terminal 4: broadcasters"
+# open_terminal "mapping: broadcasters" "${RVIZ_CMD}" "04_broadcasters"
 
 echo "All mapping terminals are running. Press Ctrl-C here to close them."
 wait "${TERMINAL_PIDS[@]}" || true

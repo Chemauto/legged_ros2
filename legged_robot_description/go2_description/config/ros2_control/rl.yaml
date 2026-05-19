@@ -207,5 +207,6 @@ rl_controller:
     cmd_vel_range_lin_vel_x: [-1.0, 1.0]  # m/s
     cmd_vel_range_lin_vel_y: [-1.0, 1.0]  # m/s
     cmd_vel_range_ang_vel_z: [-3.14, 3.14]  # rad/s
+    heightmap_topic: "/height_sampler_node/height_map"
 
     

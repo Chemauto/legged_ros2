@@ -37,11 +37,17 @@ struct ObservationTermCfg {
 
   /**
    * @brief Reset the observation buffer with the given observation.
-   * 
+   *
    * @param obs The observation to reset the buffer with.
    */
   void reset(const std::vector<float> &obs)
   {
+    if (history_length == 0) {
+      // When history_length is 0, only store the current observation
+      buff_.clear();
+      last_obs_ = _apply_scale_clip(obs);
+      return;
+    }
     for (int i = 0; i < history_length; ++i) {
       add(obs);
     }
@@ -49,30 +55,19 @@ struct ObservationTermCfg {
 
   /**
    * @brief Add a new observation to the buffer, applying scaling and clipping as configured.
-   * 
+   *
    * @param obs_in The new observation to add.
    */
   void add(const std::vector<float> &obs_in)
   {
-    std::vector<float> obs = obs_in;
-    for (size_t j = 0; j < obs.size(); ++j) {
-      // Apply scaling and clipping based on the configuration.
-      if (scale_first) {
-        if (!scale.empty()) {
-          obs[j] *= scale[j];
-        }
-        if (!clip.empty()) {
-          obs[j] = std::clamp(obs[j], clip[0], clip[1]);
-        }
-      } else {
-        if (!clip.empty()) {
-          obs[j] = std::clamp(obs[j], clip[0], clip[1]);
-        }
-        if (!scale.empty()) {
-          obs[j] *= scale[j];
-        }
-      }
+    std::vector<float> obs = _apply_scale_clip(obs_in);
+
+    if (history_length == 0) {
+      // When history_length is 0, only store the current observation without history
+      last_obs_ = obs;
+      return;
     }
+
     buff_.push_back(obs);
 
     if (buff_.size() > static_cast<size_t>(history_length)) {
@@ -90,11 +85,15 @@ struct ObservationTermCfg {
 
   /**
    * @brief Get the concatenated observations from the buffer.
-   * 
+   *
    * @return std::vector<float> The concatenated observations.
    */
   std::vector<float> get() const
   {
+    if (history_length == 0) {
+      // When history_length is 0, return only the current observation
+      return last_obs_;
+    }
     std::vector<float> concatenated;
     for (const auto &entry : buff_) {
       concatenated.insert(concatenated.end(), entry.begin(), entry.end());
@@ -104,19 +103,50 @@ struct ObservationTermCfg {
 
   /**
    * @brief Get the total size of all observations in the buffer.
-   * 
+   *
    * @return size_t The total size of all observations.
    */
   size_t size() const
   {
+    if (history_length == 0) {
+      return last_obs_.size();
+    }
     return std::accumulate(
       buff_.begin(), buff_.end(), static_cast<size_t>(0),
       [](size_t sum, const auto &v) { return sum + v.size(); });
   }
 
 private:
+  /**
+   * @brief Apply scale and clipping to the observation.
+   */
+  std::vector<float> _apply_scale_clip(const std::vector<float> &obs_in) const
+  {
+    std::vector<float> obs = obs_in;
+    for (size_t j = 0; j < obs.size(); ++j) {
+      if (scale_first) {
+        if (!scale.empty()) {
+          obs[j] *= scale[j];
+        }
+        if (!clip.empty()) {
+          obs[j] = std::clamp(obs[j], clip[0], clip[1]);
+        }
+      } else {
+        if (!clip.empty()) {
+          obs[j] = std::clamp(obs[j], clip[0], clip[1]);
+        }
+        if (!scale.empty()) {
+          obs[j] *= scale[j];
+        }
+      }
+    }
+    return obs;
+  }
+
   // Complete circular buffer with most recent entry at the end and oldest entry at the beginning.
   std::deque<std::vector<float>> buff_;
+  // Store the current observation when history_length is 0
+  std::vector<float> last_obs_;
 };
 
 }  // namespace isaaclab

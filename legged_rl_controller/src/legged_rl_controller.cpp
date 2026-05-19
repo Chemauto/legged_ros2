@@ -41,6 +41,9 @@ controller_interface::CallbackReturn LeggedRLController::on_init()
   auto_declare<std::vector<double>>("cmd_vel_range_lin_vel_y", std::vector<double>());
   auto_declare<std::vector<double>>("cmd_vel_range_ang_vel_z", std::vector<double>());
 
+  // Heightmap
+  auto_declare<std::string>("heightmap_topic", "/height_sampler_node/height_map");
+
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
@@ -101,6 +104,16 @@ controller_interface::CallbackReturn LeggedRLController::on_configure(
     cmd_vel_topic, rclcpp::SystemDefaultsQoS(),
     [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
       cmd_vel_buffer_->writeFromNonRT(msg);
+    });
+
+  // Heightmap subscription
+  heightmap_buffer_ = std::make_shared<HeightMapBuffer>();
+  auto heightmap_topic = get_node()->get_parameter("heightmap_topic").as_string();
+  heightmap_sub_ = get_node()->create_subscription<std_msgs::msg::Float32MultiArray>(
+    heightmap_topic, rclcpp::SensorDataQoS(),
+    [this](const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
+      std::vector<float> data(msg->data.begin(), msg->data.end());
+      heightmap_buffer_->writeFromNonRT(data);
     });
 
   robot_ = std::make_shared<LeggedArticulation>(
@@ -184,6 +197,14 @@ controller_interface::return_type LeggedRLController::update(
   }
 
   try {
+    // Update heightmap data
+    if (heightmap_buffer_) {
+      auto heightmap_data = heightmap_buffer_->readFromRT();
+      if (heightmap_data && !heightmap_data->empty()) {
+        env_->robot->data.height_scan = *heightmap_data;
+      }
+    }
+
     env_->step();
     auto action = env_->action_manager->processed_actions();
     if (action.size() != joint_names_.size()) {

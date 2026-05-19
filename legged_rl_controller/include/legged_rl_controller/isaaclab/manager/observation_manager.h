@@ -133,11 +133,9 @@ protected:
     }
 
     int history_length = overloads["history_length"].as<int>(1);
-    // In IsaacLab, if history_length is not explicitly set, it defaults to 0, 
-    // it is equivalent to 1 if flatten_history_dim is true.
-    // So we set it to 1 here.
-    if (history_length <= 0) {
-      history_length = 1;
+    // Allow history_length = 0 to mean "no history, only current observation"
+    if (history_length < 0) {
+      history_length = 0;
     }
     term_cfg.history_length = history_length;
     if (!overloads["scale"].IsNull()) {

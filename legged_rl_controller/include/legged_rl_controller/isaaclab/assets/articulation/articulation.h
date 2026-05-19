@@ -60,6 +60,8 @@ struct ArticulationData
         } range;
     } velocity_command;
 
+    std::vector<float> height_scan; // flattened grid, e.g. 187 floats for 17x11
+
 };
 
 class Articulation
