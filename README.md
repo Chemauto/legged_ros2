@@ -10,3 +10,4 @@ ROS 2 packages for the control, simulation, and deployment of legged robots.
 - For mapping setup with FAST-LIO 2 and MID360, please refer to the [Mapping Guide](docs/mapping.md).
 - For extending the stack to a new robot, please refer to [How to Add a New Robot](docs/add_new_robot.md).
 - For RL observation/action/model integration details, please refer to [RL Customization Guide](docs/rl_customization.md).
+- For hierarchical navigation policy (nav_controller), please refer to [Navigation Controller Guide](docs/nav_controller.md).

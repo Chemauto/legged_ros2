@@ -176,7 +176,7 @@ observations:
       history_length: 0
       scale: null
     shape:
-    - 3
+    - 4
   - dtype: torch.float32
     extras:
       description: Height scan from heightmap around the robot.

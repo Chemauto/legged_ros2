@@ -1,0 +1,20 @@
+nav_controller_node:
+  ros__parameters:
+    # ONNX model path (overridden by launch file)
+    onnx_model_path: ""
+
+    # Topics
+    odom_topic: "/odom"
+    goal_pose_topic: "/go2/goal_pose"
+    heightmap_topic: "/height_sampler_node/height_map"
+    cmd_vel_topic: "/cmd_vel"
+
+    # Control frequency (Hz)
+    control_hz: 5.0
+
+    # Observation dimensions (must match training)
+    height_scan_dim: 187
+
+    # Action clip range
+    action_clip_min: [-1.0, -1.0, -1.0]
+    action_clip_max: [1.0, 1.0, 1.0]
