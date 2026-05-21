@@ -12,6 +12,7 @@ ARG all_proxy
 
 ARG UNITREE_ROS2_REPO=https://github.com/unitreerobotics/unitree_ros2.git
 ARG UNITREE_ROS2_REF=master
+ARG PYTHON_ONNXRUNTIME_VERSION=1.22.0
 
 ENV ROS_DISTRO=humble
 
@@ -24,6 +25,7 @@ RUN set -exo pipefail \
         libyaml-cpp-dev \
         pkg-config \
         python3-colcon-common-extensions \
+        python3-pip \
         python3-rosdep \
         wget \
         ros-humble-ament-cmake \
@@ -34,6 +36,9 @@ RUN set -exo pipefail \
         ros-humble-ros2-controllers \
         ros-humble-rosidl-generator-dds-idl \
     && rm -rf /var/lib/apt/lists/*
+
+RUN set -exo pipefail \
+    && python3 -m pip install --no-cache-dir "onnxruntime==${PYTHON_ONNXRUNTIME_VERSION}"
 
 RUN set -exo pipefail \
     && rosdep init || true \

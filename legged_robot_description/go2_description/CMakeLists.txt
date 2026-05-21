@@ -15,6 +15,21 @@ install(
 )
 
 if(BUILD_TESTING)
+  include(CTest)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+  add_test(
+    NAME test_bringup_rl_policy_profile
+    COMMAND ${Python3_EXECUTABLE} -m unittest
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/test_bringup_rl_policy_profile.py
+  )
+
+  add_test(
+    NAME test_bringup_nav_launch
+    COMMAND ${Python3_EXECUTABLE} -m unittest
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/test_bringup_nav_launch.py
+  )
+
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files

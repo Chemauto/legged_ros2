@@ -1,8 +1,9 @@
 import os
+from dataclasses import dataclass
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
@@ -10,88 +11,45 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
-def generate_launch_description():
-    # Declare arguments
-    declared_arguments = []
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "description_package",
-            default_value="go2_description",
-            description="Description package with robot URDF/xacro files. Usually the argument \
-        is not set, it enables use of a custom description.",
-        )
+@dataclass(frozen=True)
+class PolicyProfilePaths:
+    policy_dir_parts: tuple[str, ...]
+
+
+_POLICY_PROFILE_PATHS = {
+    "rl": PolicyProfilePaths(("rl_policy",)),
+    "nav_low_level": PolicyProfilePaths(("nav_policy", "low_level_policy")),
+}
+
+
+def get_policy_profile_paths(policy_profile):
+    try:
+        return _POLICY_PROFILE_PATHS[policy_profile]
+    except KeyError:
+        supported_profiles = ", ".join(sorted(_POLICY_PROFILE_PATHS))
+        raise ValueError(
+            f"Unsupported policy_profile '{policy_profile}'. "
+            f"Supported profiles: {supported_profiles}"
+        ) from None
+
+
+def resolve_policy_file_path(context, launch_argument_name, filename):
+    explicit_path = LaunchConfiguration(launch_argument_name).perform(context).strip()
+    if explicit_path:
+        return explicit_path
+
+    policy_profile = LaunchConfiguration("policy_profile").perform(context).strip()
+    policy_paths = get_policy_profile_paths(policy_profile)
+    policy_dir = os.path.join(
+        get_package_share_directory("go2_description"),
+        "config",
+        *policy_paths.policy_dir_parts,
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "description_file",
-            default_value="robot.xacro",
-            description="URDF/XACRO description file with the robot.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "controller_config",
-            default_value="rl.yaml",
-            description="Controller configuration file.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "main_loop_config",
-            default_value="rl.yaml",
-            description="Main loop configuration file.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "enable_lowlevel_write",
-            default_value="true",
-            description="Enable low-level command writing, useful in debugging or testing scenarios. \
-                        If set to true, the robot will receive low-level commands from the controller.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "onnx_model_path",
-            default_value=PathJoinSubstitution(
-                [
-                    FindPackageShare("go2_description"),
-                    "config",
-                    "rl_policy",
-                    "policy.onnx",
-                ]
-            ),
-            description="Path to ONNX policy model for RL controller.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "io_descriptors_path",
-            default_value=PathJoinSubstitution(
-                [
-                    FindPackageShare("go2_description"),
-                    "config",
-                    "rl_policy",
-                    "IO_descriptors.yaml",
-                ]
-            ),
-            description="Path to IO descriptors YAML for RL controller.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "use_rviz",
-            default_value="false",
-            description="Start RViz2 automatically with this launch file.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "use_rqt_cm",
-            default_value="false",
-            description="Start rqt_controller_manager automatically with this launch file.",
-        )
-    )
+    return os.path.join(policy_dir, filename)
+
+
+def launch_setup(context, *args, **kwargs):
+    del args, kwargs
 
     # Initialize Arguments
     description_package = LaunchConfiguration("description_package")
@@ -99,8 +57,9 @@ def generate_launch_description():
     controller_config = LaunchConfiguration("controller_config")
     main_loop_config = LaunchConfiguration("main_loop_config")
     enable_lowlevel_write = LaunchConfiguration("enable_lowlevel_write")
-    onnx_model_path = LaunchConfiguration("onnx_model_path")
-    io_descriptors_path = LaunchConfiguration("io_descriptors_path")
+    onnx_model_path = resolve_policy_file_path(context, "onnx_model_path", "policy.onnx")
+    io_descriptors_path = resolve_policy_file_path(
+        context, "io_descriptors_path", "IO_descriptors.yaml")
     use_rviz = LaunchConfiguration("use_rviz")
     use_rqt_cm = LaunchConfiguration("use_rqt_cm")
 
@@ -235,11 +194,91 @@ def generate_launch_description():
         )
     )
 
-    nodes = [
+    return [
         main_loop_node,
         robot_state_pub_node,
         stand_static_controller_spawner,
         delay_after_stand_static_controller_spawner,
     ]
 
-    return LaunchDescription(declared_arguments + nodes)
+
+def generate_launch_description():
+    # Declare arguments
+    declared_arguments = []
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "description_package",
+            default_value="go2_description",
+            description="Description package with robot URDF/xacro files. Usually the argument \
+        is not set, it enables use of a custom description.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "description_file",
+            default_value="robot.xacro",
+            description="URDF/XACRO description file with the robot.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "controller_config",
+            default_value="rl.yaml",
+            description="Controller configuration file.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "main_loop_config",
+            default_value="rl.yaml",
+            description="Main loop configuration file.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "enable_lowlevel_write",
+            default_value="true",
+            description="Enable low-level command writing, useful in debugging or testing scenarios. \
+                        If set to true, the robot will receive low-level commands from the controller.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "policy_profile",
+            default_value="rl",
+            description="Policy profile to load when explicit policy paths are not provided. "
+                        "Supported values: rl, nav_low_level.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "onnx_model_path",
+            default_value="",
+            description="Path to ONNX policy model for RL controller. "
+                        "Overrides policy_profile when set.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "io_descriptors_path",
+            default_value="",
+            description="Path to IO descriptors YAML for RL controller. "
+                        "Overrides policy_profile when set.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_rviz",
+            default_value="false",
+            description="Start RViz2 automatically with this launch file.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_rqt_cm",
+            default_value="false",
+            description="Start rqt_controller_manager automatically with this launch file.",
+        )
+    )
+
+    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

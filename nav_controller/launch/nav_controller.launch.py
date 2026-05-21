@@ -1,28 +1,29 @@
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+
+
+def get_default_model_path_parts():
+    return ("config", "nav_policy", "policy.onnx")
+
+
+def get_default_model_path():
+    return PathJoinSubstitution(
+        [FindPackageShare("go2_description"), *get_default_model_path_parts()]
+    )
 
 
 def generate_launch_description():
-    pkg_dir = get_package_share_directory("nav_controller")
-
-    # Default ONNX model path: relative to the workspace src directory
-    default_model_path = os.path.join(
-        pkg_dir, "..", "..", "..", "..",
-        "src", "legged_ros2",
-        "legged_robot_description", "go2_description", "config", "nav_policy", "policy.onnx"
+    config_file = PathJoinSubstitution(
+        [FindPackageShare("nav_controller"), "config", "nav_controller.yaml"]
     )
-
-    config_file = os.path.join(pkg_dir, "config", "nav_controller.yaml")
 
     return LaunchDescription([
         DeclareLaunchArgument(
             "onnx_model_path",
-            default_value=default_model_path,
+            default_value=get_default_model_path(),
             description="Path to the high-level navigation ONNX policy",
         ),
         DeclareLaunchArgument(

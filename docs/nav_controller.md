@@ -30,7 +30,7 @@
 │  legged_rl_controller (C++, 50Hz)                    │
 │                                                      │
 │  订阅: /cmd_vel + /height_sampler_node/height_map    │
-│  推理: walk 策略 (232维输入, 12维输出)                 │
+│  推理: nav low-level 策略 (232维输入, 12维输出)         │
 │  输出: 关节位置目标 → 硬件/MuJoCo                      │
 └──────────────────────────────────────────────────────┘
 ```
@@ -79,6 +79,10 @@ nav_controller/
 │   └── nav_controller.yaml        # 参数配置
 └── launch/
     └── nav_controller.launch.py   # 启动文件
+
+legged_robot_description/go2_description/
+└── launch/
+    └── bringup_nav.launch.py      # 一键启动高层 + 低层导航策略
 ```
 
 ## 使用方法
@@ -100,7 +104,7 @@ legged_robot_description/go2_description/config/nav_policy/policy.onnx
 
 ```bash
 cd /root/legged_ws
-colcon build --packages-select nav_controller --symlink-install
+colcon build --packages-select go2_description nav_controller --symlink-install
 source install/setup.bash
 ```
 
@@ -113,37 +117,51 @@ source install/setup.bash
 cd /home/xcj/work/Sim2Real/Mujoco
 bash run_mujoco.sh
 
-# 终端 2: 启动低层控制器 (walk 策略)
-ros2 launch go2_description bringup_rl.launch.py use_rviz:=false use_rqt_cm:=false
-
-# 终端 3: 启动高层导航控制器
-ros2 launch nav_controller nav_controller.launch.py
+# 终端 2: 一键启动低层 nav 策略 + 高层导航策略
+ros2 launch go2_description bringup_nav.launch.py \
+  use_rviz:=false \
+  use_rqt_cm:=false
 ```
 
 **Sim2Real (真实机器人):**
 
 ```bash
+# 如镜像内未安装 onnxruntime，先安装
+apt update && apt install -y python3-pip
+pip3 install onnxruntime
 
-  apt update && apt install -y python3-pip
-  pip3 install onnxruntime
-
-
-# 终端 1: 启动低层控制器
-ros2 launch go2_description bringup_rl.launch.py use_rviz:=true
-
-# 终端 2: 启动高层导航控制器
-ros2 launch nav_controller nav_controller.launch.py
+# 启动低层 nav 策略 + 高层导航策略
+ros2 launch go2_description bringup_nav.launch.py \
+  use_rviz:=false \
+  use_rqt_cm:=false
 ```
+
+`bringup_nav.launch.py` 内部会做两件事：
+
+- include `go2_description/launch/bringup_rl.launch.py`，并传入 `policy_profile:=nav_low_level`
+- include `nav_controller/launch/nav_controller.launch.py`，并加载高层模型 `go2_description/config/nav_policy/policy.onnx`
 
 ### 4. 发送目标位姿
 
 ```bash
 # 世界坐标系下的目标位姿 (x, y, heading)
 ros2 topic pub --once /go2/goal_pose geometry_msgs/PoseStamped \
-  "{header: {frame_id: 'map'}, pose: {position: {x: 5.0, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}"
+  "{header: {frame_id: 'map'}, pose: {position: {x: 0.0, y: 2.0, z: 0.0}, orientation: {w: 1.0}}}"
 ```
 
 ### 5. 自定义参数
+
+一键启动时可以覆盖高层模型和目标 topic：
+
+```bash
+ros2 launch go2_description bringup_nav.launch.py \
+  high_level_onnx_model_path:=/path/to/your/high_level_policy.onnx \
+  goal_pose_topic:=/custom/goal_topic \
+  use_rviz:=false \
+  use_rqt_cm:=false
+```
+
+如果只想单独启动高层节点，也可以直接使用 `nav_controller.launch.py`：
 
 ```bash
 ros2 launch nav_controller nav_controller.launch.py \
@@ -190,5 +208,5 @@ dy_body = -sin(yaw) * dx_world + cos(yaw) * dy_world
 
 1. **ONNX 模型兼容性**: 确保导出的 ONNX 模型输入输出维度与训练时一致 (197 维输入, 3 维输出)
 2. **高程图格式**: MuJoCo 仿真器的高程图配置 (size, resolution) 需与训练时一致
-3. **低层策略**: `legged_rl_controller` 需要同时运行，使用已有的 walk 策略
+3. **低层策略**: `bringup_nav.launch.py` 会让 `legged_rl_controller` 使用 `nav_low_level` 策略，即 `go2_description/config/nav_policy/low_level_policy`
 4. **目标位姿坐标系**: 发送到 `/go2/goal_pose` 的位姿必须是世界坐标系下的绝对值
