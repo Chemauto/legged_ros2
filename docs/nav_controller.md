@@ -22,14 +22,14 @@
 │    ONNX 推理 → 3D raw action [-1, 1]                  │
 │                                                      │
 │  输出:                                               │
-│    /cmd_vel (Twist) → 速度命令                        │
+│    /nav_cmd_vel (Twist) → 速度命令                    │
 └──────────────────────────┬───────────────────────────┘
                            |
                            v
 ┌──────────────────────────────────────────────────────┐
 │  legged_rl_controller (C++, 50Hz)                    │
 │                                                      │
-│  订阅: /cmd_vel + /height_sampler_node/height_map    │
+│  导航 bringup 订阅: /nav_cmd_vel + 高程图              │
 │  推理: nav low-level 策略 (232维输入, 12维输出)         │
 │  输出: 关节位置目标 → 硬件/MuJoCo                      │
 └──────────────────────────────────────────────────────┘
@@ -48,11 +48,12 @@
 
 | 维度 | 语义 | 范围 |
 |------|------|------|
-| 0 | `linear.x` (前进速度) | [-1.0, 1.0] m/s |
-| 1 | `linear.y` (横向速度) | [-1.0, 1.0] m/s |
-| 2 | `angular.z` (角速度) | [-1.0, 1.0] rad/s |
+| 0 | `linear.x` (前进速度) | [-0.5, 0.5] m/s |
+| 1 | `linear.y` (横向速度) | [-0.5, 0.5] m/s |
+| 2 | `angular.z` (角速度) | [-0.5, 0.5] rad/s |
 
-动作直接作为速度命令发布到 `/cmd_vel`，无需额外的 scale/offset 变换。
+动作直接作为速度命令发布到导航专用 `/nav_cmd_vel`，无需额外的 scale/offset 变换。
+普通 `bringup_rl.launch.py` 仍默认使用 `/cmd_vel`，避免破坏遥控器/RL 的原有用法。
 
 ## 训练时的关键参数
 
@@ -146,7 +147,7 @@ ros2 launch go2_description bringup_nav.launch.py \
 ```bash
 # 世界坐标系下的目标位姿 (x, y, heading)
 ros2 topic pub --once /go2/goal_pose geometry_msgs/PoseStamped \
-  "{header: {frame_id: 'map'}, pose: {position: {x: 0.0, y: 2.0, z: 0.0}, orientation: {w: 1.0}}}"
+  "{header: {frame_id: 'map'}, pose: {position: {x: 0.0, y: 2.0, z: 0.0}, orientation: {w: 0.0}}}"
 ```
 
 ### 5. 自定义参数
@@ -179,11 +180,11 @@ ros2 launch nav_controller nav_controller.launch.py \
 | `odom_topic` | `/odom` | 里程计 topic |
 | `goal_pose_topic` | `/go2/goal_pose` | 目标位姿 topic |
 | `heightmap_topic` | `/height_sampler_node/height_map` | 高程图 topic |
-| `cmd_vel_topic` | `/cmd_vel` | 速度命令 topic |
+| `cmd_vel_topic` | `/cmd_vel` | 速度命令 topic；`bringup_nav.launch.py` 会覆盖为 `/nav_cmd_vel` |
 | `control_hz` | 5.0 | 控制频率 |
 | `height_scan_dim` | 187 | 高程图维度 |
-| `action_clip_min` | [-1.0, -1.0, -1.0] | 动作下限 |
-| `action_clip_max` | [1.0, 1.0, 1.0] | 动作上限 |
+| `action_clip_min` | [-0.5, -0.5, -0.5] | 动作下限 |
+| `action_clip_max` | [0.5, 0.5, 0.5] | 动作上限 |
 
 ## 坐标系说明
 

@@ -6,11 +6,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def get_default_model_path_parts():
-    return ("config", "nav_policy", "policy.onnx")
-
-
-def get_default_cmd_vel_topic():
-    return "/cmd_vel"
+    return ("config", "push_policy", "policy.onnx")
 
 
 def get_default_model_path():
@@ -21,35 +17,35 @@ def get_default_model_path():
 
 def generate_launch_description():
     config_file = PathJoinSubstitution(
-        [FindPackageShare("nav_controller"), "config", "nav_controller.yaml"]
+        [FindPackageShare("push_controller"), "config", "push_controller.yaml"]
     )
 
     return LaunchDescription([
         DeclareLaunchArgument(
             "onnx_model_path",
             default_value=get_default_model_path(),
-            description="Path to the high-level navigation ONNX policy",
+            description="Path to the high-level push-box ONNX policy.",
+        ),
+        DeclareLaunchArgument(
+            "push_obs_topic",
+            default_value="/push_box_obs",
+            description="16D external push-box observation topic.",
         ),
         DeclareLaunchArgument(
             "goal_pose_topic",
-            default_value="/go2/goal_pose",
-            description="Topic for goal pose commands",
-        ),
-        DeclareLaunchArgument(
-            "cmd_vel_topic",
-            default_value=get_default_cmd_vel_topic(),
-            description="Topic for velocity commands",
+            default_value="/push_box_goal_pose",
+            description="Fallback goal pose topic when external push observations are disabled.",
         ),
         Node(
-            package="nav_controller",
-            executable="nav_controller_node",
-            name="nav_controller_node",
+            package="push_controller",
+            executable="push_controller_node",
+            name="push_controller_node",
             output="screen",
             parameters=[
                 config_file,
                 {"onnx_model_path": LaunchConfiguration("onnx_model_path")},
+                {"push_obs_topic": LaunchConfiguration("push_obs_topic")},
                 {"goal_pose_topic": LaunchConfiguration("goal_pose_topic")},
-                {"cmd_vel_topic": LaunchConfiguration("cmd_vel_topic")},
             ],
         ),
     ])

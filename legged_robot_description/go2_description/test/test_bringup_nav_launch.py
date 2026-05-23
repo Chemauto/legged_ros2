@@ -43,6 +43,18 @@ class BringupNavLaunchTest(unittest.TestCase):
             ("config", "nav_policy", "policy.onnx"),
         )
 
+    def test_nav_launch_uses_isolated_cmd_vel_topic(self):
+        self.assertEqual(
+            self.bringup_nav.get_default_cmd_vel_topic(),
+            "/nav_cmd_vel",
+        )
+
+    def test_nav_controller_standalone_default_uses_cmd_vel(self):
+        self.assertEqual(
+            self.nav_controller_launch.get_default_cmd_vel_topic(),
+            "/cmd_vel",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

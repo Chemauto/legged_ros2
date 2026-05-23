@@ -1,0 +1,11 @@
+push_controller_node:
+  ros__parameters:
+    onnx_model_path: ""
+    push_obs_topic: "/push_box_obs"
+    odom_topic: "/odom"
+    box_pose_topic: "/push_box_pose"
+    goal_pose_topic: "/push_box_goal_pose"
+    cmd_vel_topic: "/cmd_vel"
+    control_hz: 5.0
+    use_external_push_obs: true
+    push_obs_timeout_sec: 0.2

@@ -1,0 +1,90 @@
+actions:
+- action_type: PreTrainedPolicyAction
+  clip:
+  - - -0.5
+    - 1.0
+  - - -1.0
+    - 1.0
+  - - -0.5
+    - 0.5
+  dtype: torch.float32
+  extras:
+    description: High-level push-box action used as velocity command for the low-level walking policy.
+  full_path: MyProject.tasks.manager_based.PushBoxTest.mdp.pre_trained_policy_action.PreTrainedPolicyAction
+  mdp_type: Action
+  name: pre_trained_policy_action
+  scale:
+  - 1.0
+  - 1.0
+  - 1.0
+  shape:
+  - 3
+observations:
+  policy:
+  - dtype: torch.float32
+    extras:
+      description: Root angular velocity in the robot body frame.
+    full_path: isaaclab.envs.mdp.observations.base_ang_vel
+    mdp_type: Observation
+    name: base_ang_vel
+    observation_type: RootState
+    shape:
+    - 3
+  - dtype: torch.float32
+    extras:
+      description: Gravity projection in the robot body frame.
+    full_path: isaaclab.envs.mdp.observations.projected_gravity
+    mdp_type: Observation
+    name: projected_gravity
+    observation_type: RootState
+    shape:
+    - 3
+  - dtype: torch.float32
+    extras:
+      description: Box position in the robot frame.
+    full_path: MyProject.tasks.manager_based.PushBoxTest.mdp.observations.box_in_robot_frame_pos
+    mdp_type: Observation
+    name: box_in_robot_frame_pos
+    observation_type: BoxState
+    shape:
+    - 3
+  - dtype: torch.float32
+    extras:
+      description: Box yaw relative to the robot frame encoded as sin and cos.
+    full_path: MyProject.tasks.manager_based.PushBoxTest.mdp.observations.box_in_robot_frame_yaw
+    mdp_type: Observation
+    name: box_in_robot_frame_yaw
+    observation_type: BoxState
+    shape:
+    - 2
+  - dtype: torch.float32
+    extras:
+      description: Goal position in the box frame.
+    full_path: MyProject.tasks.manager_based.PushBoxTest.mdp.observations.goal_in_box_frame_pos
+    mdp_type: Observation
+    name: goal_in_box_frame_pos
+    observation_type: Command
+    shape:
+    - 3
+  - dtype: torch.float32
+    extras:
+      description: Goal yaw relative to the box frame encoded as sin and cos.
+    full_path: MyProject.tasks.manager_based.PushBoxTest.mdp.observations.goal_in_box_frame_yaw
+    mdp_type: Observation
+    name: goal_in_box_frame_yaw
+    observation_type: Command
+    shape:
+    - 2
+  - dtype: torch.float32
+    extras:
+      description: Processed high-level action after clipping.
+    full_path: MyProject.tasks.manager_based.PushBoxTest.mdp.observations.processed_last_action
+    mdp_type: Observation
+    name: processed_last_action
+    observation_type: Action
+    shape:
+    - 3
+scene:
+  decimation: 40
+  dt: 0.2
+  physics_dt: 0.005

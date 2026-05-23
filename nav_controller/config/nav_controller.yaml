@@ -16,5 +16,5 @@ nav_controller_node:
     height_scan_dim: 187
 
     # Action clip range
-    action_clip_min: [-1.0, -1.0, -1.0]
-    action_clip_max: [1.0, 1.0, 1.0]
+    action_clip_min: [-0.5, -0.5, -0.5]
+    action_clip_max: [0.5, 0.5, 0.5]

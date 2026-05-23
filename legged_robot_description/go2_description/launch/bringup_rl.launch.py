@@ -19,6 +19,7 @@ class PolicyProfilePaths:
 _POLICY_PROFILE_PATHS = {
     "rl": PolicyProfilePaths(("rl_policy",)),
     "nav_low_level": PolicyProfilePaths(("nav_policy", "low_level_policy")),
+    "push_low_level": PolicyProfilePaths(("push_policy", "low_level_policy")),
 }
 
 
@@ -57,6 +58,7 @@ def launch_setup(context, *args, **kwargs):
     controller_config = LaunchConfiguration("controller_config")
     main_loop_config = LaunchConfiguration("main_loop_config")
     enable_lowlevel_write = LaunchConfiguration("enable_lowlevel_write")
+    cmd_vel_topic = LaunchConfiguration("cmd_vel_topic")
     onnx_model_path = resolve_policy_file_path(context, "onnx_model_path", "policy.onnx")
     io_descriptors_path = resolve_policy_file_path(
         context, "io_descriptors_path", "IO_descriptors.yaml")
@@ -102,6 +104,7 @@ def launch_setup(context, *args, **kwargs):
     rl_controller_params = {
         "onnx_model_path": onnx_model_path,
         "io_descriptors_path": io_descriptors_path,
+        "cmd_vel_topic": cmd_vel_topic,
     }
 
     main_loop_node = Node(
@@ -244,10 +247,17 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            "cmd_vel_topic",
+            default_value="cmd_vel",
+            description="Velocity command topic consumed by rl_controller.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "policy_profile",
             default_value="rl",
             description="Policy profile to load when explicit policy paths are not provided. "
-                        "Supported values: rl, nav_low_level.",
+                        "Supported values: rl, nav_low_level, push_low_level.",
         )
     )
     declared_arguments.append(
