@@ -1,5 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -67,6 +68,26 @@ def generate_launch_description():
             description="Odometry topic used by fallback push-box observation construction.",
         ),
         DeclareLaunchArgument(
+            "use_pose_bridge",
+            default_value="true",
+            description="Bridge /unitree_go2/pose and /unitree_box/pose into push fallback topics.",
+        ),
+        DeclareLaunchArgument(
+            "robot_pose_topic",
+            default_value="/unitree_go2/pose",
+            description="Input robot PoseStamped topic in the world frame.",
+        ),
+        DeclareLaunchArgument(
+            "box_pose_input_topic",
+            default_value="/unitree_box/pose",
+            description="Input box PoseStamped topic in the same world frame as robot pose.",
+        ),
+        DeclareLaunchArgument(
+            "box_pose_topic",
+            default_value="/push_box_pose",
+            description="Fallback push-box current pose topic consumed by push_controller.",
+        ),
+        DeclareLaunchArgument(
             "raw_push_obs_topic",
             default_value="/push_box_obs",
             description="Raw unitree_go/HeightMap push-box observation topic from MuJoCo/Unitree DDS.",
@@ -125,12 +146,27 @@ def generate_launch_description():
         }],
     )
 
+    push_pose_bridge = Node(
+        package="push_controller",
+        executable="push_pose_bridge_node",
+        name="push_pose_bridge_node",
+        output="screen",
+        condition=IfCondition(LaunchConfiguration("use_pose_bridge")),
+        parameters=[{
+            "robot_pose_topic": LaunchConfiguration("robot_pose_topic"),
+            "box_pose_input_topic": LaunchConfiguration("box_pose_input_topic"),
+            "odom_topic": LaunchConfiguration("odom_topic"),
+            "push_box_pose_topic": LaunchConfiguration("box_pose_topic"),
+        }],
+    )
+
     high_level_push = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(push_controller_launch),
         launch_arguments={
             "onnx_model_path": LaunchConfiguration("high_level_onnx_model_path"),
             "push_obs_topic": LaunchConfiguration("push_obs_topic"),
             "odom_topic": LaunchConfiguration("odom_topic"),
+            "box_pose_topic": LaunchConfiguration("box_pose_topic"),
             "goal_pose_topic": LaunchConfiguration("goal_pose_topic"),
             "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
             "goal_tolerance_xy": LaunchConfiguration("goal_tolerance_xy"),
@@ -140,7 +176,7 @@ def generate_launch_description():
 
     delayed_high_level_push = TimerAction(
         period=get_high_level_start_delay_sec(),
-        actions=[push_obs_bridge, high_level_push],
+        actions=[push_obs_bridge, push_pose_bridge, high_level_push],
     )
 
     return LaunchDescription(declared_arguments + [low_level_bringup, delayed_high_level_push])

@@ -99,15 +99,15 @@ legged_robot_description/go2_description/config/push_policy/low_level_policy/IO_
 
 | 维度 | 语义 | 裁剪范围 |
 |------|------|----------|
-| 0 | `linear.x` | [-0.5, 1.0] |
-| 1 | `linear.y` | [-1.0, 1.0] |
-| 2 | `angular.z` | [-0.5, 0.5] |
+| 0 | `linear.x` | [-0.2, 1.0] |
+| 1 | `linear.y` | [-0.3, 0.3] |
+| 2 | `angular.z` | [-0.2, 0.2] |
 
 默认裁剪范围在 `push_controller/config/push_controller.yaml` 中配置：
 
 ```yaml
-action_clip_min: [-0.5, -1.0, -0.5]
-action_clip_max: [1.0, 1.0, 0.5]
+action_clip_min: [-0.2, -0.3, -0.2]
+action_clip_max: [1.0, 0.3, 0.2]
 ```
 
 实机如果需要更保守的推箱速度，可以改成：
@@ -148,6 +148,7 @@ ros2 control switch_controllers \
 
 - include `go2_description/launch/bringup_rl.launch.py`，并传入 `policy_profile:=push_low_level`
 - 启动 `push_box_obs_bridge_node`，把原始 `/push_box_obs` 转成 `/push_box_obs_float`
+- 默认启动 `push_pose_bridge_node`，把 `/unitree_go2/pose` 转成 `/Odometry`，把 `/unitree_box/pose` 转成 `/push_box_pose`
 - include `push_controller/launch/push_controller.launch.py`，加载高层模型 `go2_description/config/push_policy/policy.onnx`，并让高层输出 `/push_cmd_vel`
 
 默认 `enabled_on_start:=false`。重启 `bringup_push.launch.py` 后，`push_controller` 不应在收到新的 push 命令或 `/push_box_goal_pose` 前主动执行旧任务。
@@ -157,6 +158,29 @@ ros2 control switch_controllers \
 ```bash
 cd /home/xcj/work/Sim2Real/Mujoco
 bash run_mujoco.sh
+```
+
+真实部署时，如果感知系统发布的是世界坐标系下的 `PoseStamped`：
+
+```text
+/unitree_go2/pose
+/unitree_box/pose
+```
+
+`bringup_push.launch.py` 默认会桥接为：
+
+```text
+/unitree_go2/pose -> /Odometry
+/unitree_box/pose -> /push_box_pose
+```
+
+如果你已经有其它节点发布 `/Odometry` 和 `/push_box_pose`，可以关闭这个桥：
+
+```bash
+ros2 launch go2_description bringup_push.launch.py \
+  use_pose_bridge:=false \
+  use_rviz:=false \
+  use_rqt_cm:=false
 ```
 
 ## 话题要求
@@ -257,6 +281,22 @@ ros2 topic hz /push_cmd_vel
 /push_box_goal_pose  目标箱子位姿
 ```
 
+如果输入来自你的实机感知话题，则默认桥接关系为：
+
+```text
+/unitree_go2/pose   geometry_msgs/msg/PoseStamped  世界坐标系机器人位姿
+/unitree_box/pose   geometry_msgs/msg/PoseStamped  世界坐标系箱子位姿
+```
+
+桥接后输出：
+
+```text
+/Odometry           nav_msgs/msg/Odometry
+/push_box_pose      geometry_msgs/msg/PoseStamped
+```
+
+`/unitree_go2/pose`、`/unitree_box/pose` 和 `/push_box_goal_pose` 的数值必须在同一个世界坐标系下。桥接节点不会做 TF 坐标变换；`/Odometry.twist` 暂时填零。如果后续能拿到 IMU 角速度，建议接入真实角速度。
+
 如果已经有 MuJoCo/Unitree 持续发布原始 `/push_box_obs`，则不需要手动发布下面两个 fallback 话题；桥接节点会生成 `/push_box_obs_float` 给高层策略使用。
 
 如果没有原始 `/push_box_obs`，可以用 fallback 方式测试。先发布箱子当前位姿：
@@ -351,6 +391,10 @@ ros2 launch go2_description bringup_push.launch.py \
   converted_push_obs_topic:=/push_box_obs_float \
   push_obs_topic:=/push_box_obs_float \
   odom_topic:=/Odometry \
+  use_pose_bridge:=true \
+  robot_pose_topic:=/unitree_go2/pose \
+  box_pose_input_topic:=/unitree_box/pose \
+  box_pose_topic:=/push_box_pose \
   cmd_vel_topic:=/push_cmd_vel \
   goal_tolerance_xy:=0.12 \
   enabled_on_start:=false \

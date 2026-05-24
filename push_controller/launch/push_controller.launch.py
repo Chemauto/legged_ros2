@@ -46,6 +46,11 @@ def generate_launch_description():
             description="Fallback goal pose topic when external push observations are disabled.",
         ),
         DeclareLaunchArgument(
+            "box_pose_topic",
+            default_value="/push_box_pose",
+            description="Fallback current box pose topic when external push observations are disabled.",
+        ),
+        DeclareLaunchArgument(
             "cmd_vel_topic",
             default_value=get_default_cmd_vel_topic(),
             description="Velocity command topic published by push_controller.",
@@ -70,6 +75,7 @@ def generate_launch_description():
                 {"onnx_model_path": LaunchConfiguration("onnx_model_path")},
                 {"push_obs_topic": LaunchConfiguration("push_obs_topic")},
                 {"odom_topic": LaunchConfiguration("odom_topic")},
+                {"box_pose_topic": LaunchConfiguration("box_pose_topic")},
                 {"goal_pose_topic": LaunchConfiguration("goal_pose_topic")},
                 {"cmd_vel_topic": LaunchConfiguration("cmd_vel_topic")},
                 {"goal_tolerance_xy": LaunchConfiguration("goal_tolerance_xy")},
