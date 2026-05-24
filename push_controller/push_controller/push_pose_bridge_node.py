@@ -80,8 +80,8 @@ def main(args=None):
     class PushPoseBridge(Node):
         def __init__(self):
             super().__init__("push_pose_bridge_node")
-            self.declare_parameter("robot_pose_topic", "/unitree_go2/pose")
-            self.declare_parameter("box_pose_input_topic", "/unitree_box/pose")
+            self.declare_parameter("robot_pose_topic", "/mocap/unitree_go2/pose")
+            self.declare_parameter("box_pose_input_topic", "/mocap/unitree_box/pose")
             self.declare_parameter("odom_topic", "/Odometry")
             self.declare_parameter("push_box_pose_topic", "/push_box_pose")
             self.declare_parameter("child_frame_id", "base")

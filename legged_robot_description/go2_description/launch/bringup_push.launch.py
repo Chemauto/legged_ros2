@@ -70,16 +70,16 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "use_pose_bridge",
             default_value="true",
-            description="Bridge /unitree_go2/pose and /unitree_box/pose into push fallback topics.",
+            description="Bridge /mocap/unitree_go2/pose and /mocap/unitree_box/pose into push fallback topics.",
         ),
         DeclareLaunchArgument(
             "robot_pose_topic",
-            default_value="/unitree_go2/pose",
+            default_value="/mocap/unitree_go2/pose",
             description="Input robot PoseStamped topic in the world frame.",
         ),
         DeclareLaunchArgument(
             "box_pose_input_topic",
-            default_value="/unitree_box/pose",
+            default_value="/mocap/unitree_box/pose",
             description="Input box PoseStamped topic in the same world frame as robot pose.",
         ),
         DeclareLaunchArgument(
