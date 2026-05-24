@@ -28,7 +28,7 @@ Agent nav(x, y, z)
 状态回传链路：
 
 ```text
-/odom
+/Odometry
 /go2/box_pose
 /go2/skill_status
 /go2/scene_objects
@@ -41,8 +41,9 @@ Agent nav(x, y, z)
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--odom-topic` | `/odom` | 机器人里程计 |
+| `--odom-topic` | `/Odometry` | 机器人里程计 |
 | `--goal-pose-topic` | `/go2/goal_pose` | 导航目标位姿 |
+| `--push-goal-pose-topic` | `/push_box_goal_pose` | 推箱目标位姿 |
 | `--skill-command-topic` | `/go2/skill_command` | 技能模式命令 |
 | `--cmd-vel-topic` | `/cmd_vel` | 直接速度技能使用；导航不走这个 topic |
 | `--box-pose-topic` | `/go2/box_pose` | 箱子位姿 |
@@ -72,12 +73,12 @@ ros2 launch go2_description bringup_nav.launch.py use_rviz:=false use_rqt_cm:=fa
 
 ```bash
 ros2 control list_controllers
-ros2 topic hz /odom
+ros2 topic hz /Odometry
 ros2 topic info /go2/goal_pose -v
 ros2 topic info /nav_cmd_vel -v
 ```
 
-期望 `rl_controller` 能够进入 `active`，`/odom` 有稳定输出；导航模式下 `rl_controller` 应订阅 `/nav_cmd_vel`，避免遥控器 `/cmd_vel` 零速度覆盖导航输出。
+期望 `rl_controller` 能够进入 `active`，`/Odometry` 有稳定输出；导航模式下 `rl_controller` 应订阅 `/nav_cmd_vel`，避免遥控器 `/cmd_vel` 零速度覆盖导航输出。
 
 4. 在机器人部署端 Docker 内启动本服务端。
 
@@ -123,13 +124,14 @@ python3 deploy/run.py
 }
 ```
 
-`status_json_ready` 只有在服务端收到 `/odom` 后才会变成 `true`。如果一直是 `false`，先检查机器人里程计是否在发布 `/odom`，以及 `llmservice` 是否和机器人 ROS2 节点处于同一个 `ROS_DOMAIN_ID`。
+`status_json_ready` 只有在服务端收到 `/Odometry` 后才会变成 `true`。如果一直是 `false`，先检查机器人里程计是否在发布 `/Odometry`，以及 `llmservice` 是否和机器人 ROS2 节点处于同一个 `ROS_DOMAIN_ID`。
 
 ROS2 侧建议检查：
 
 ```bash
-ros2 topic hz /odom
+ros2 topic hz /Odometry
 ros2 topic info /go2/goal_pose -v
+ros2 topic info /push_box_goal_pose -v
 ros2 topic info /nav_cmd_vel -v
 ros2 topic hz /height_sampler_node/height_map
 ```
@@ -138,6 +140,7 @@ ros2 topic hz /height_sampler_node/height_map
 
 ```text
 /go2/goal_pose: llmservice 发布，nav_controller_node 订阅
+/push_box_goal_pose: llmservice 发布，push_controller_node 订阅
 /nav_cmd_vel: nav_controller_node 发布，rl_controller 订阅
 /cmd_vel: 遥控器可发布，但 rl_controller 不订阅
 ```
@@ -147,6 +150,21 @@ ros2 topic hz /height_sampler_node/height_map
 ```json
 {"type": "command", "skill": "nav", "args": {"x": 1.0, "y": 0.5, "z": 0.0}}
 ```
+
+推箱命令示例：
+
+```json
+{"type": "command", "skill": "push", "args": {"x": 1.5, "y": 0.0, "z": 0.0}}
+```
+
+`llmservice` 会同时发布：
+
+```text
+/push_box_goal_pose
+/go2/skill_command {"model_use": 3, "goal": [x, y, z], "start": true}
+```
+
+实机推箱仍需要 `bringup_push.launch.py` 已启动，并且存在有效 `/push_box_obs_float`，或者持续发布 `/push_box_pose` 与 `/Odometry` 供 fallback 观测使用。
 
 兼容 FQPlanner 里的别名：
 

@@ -12,6 +12,8 @@ from std_msgs.msg import Float32MultiArray, String
 from .geometry import (
     PUSH_OBS_DIM,
     PUSH_POLICY_OBS_DIM,
+    PUSH_ACTION_CLIP_MAX,
+    PUSH_ACTION_CLIP_MIN,
     build_push_observation,
     clip_push_action,
     is_fresh,
@@ -27,7 +29,7 @@ class PushController(Node):
 
         self.declare_parameter("onnx_model_path", "")
         self.declare_parameter("push_obs_topic", "/push_box_obs")
-        self.declare_parameter("odom_topic", "/odom")
+        self.declare_parameter("odom_topic", "/Odometry")
         self.declare_parameter("box_pose_topic", "/push_box_pose")
         self.declare_parameter("goal_pose_topic", "/push_box_goal_pose")
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
@@ -36,8 +38,10 @@ class PushController(Node):
         self.declare_parameter("use_external_push_obs", True)
         self.declare_parameter("push_obs_timeout_sec", 0.2)
         self.declare_parameter("stop_on_goal", True)
-        self.declare_parameter("goal_tolerance_xy", 0.08)
-        self.declare_parameter("enabled_on_start", True)
+        self.declare_parameter("goal_tolerance_xy", 0.12)
+        self.declare_parameter("enabled_on_start", False)
+        self.declare_parameter("action_clip_min", PUSH_ACTION_CLIP_MIN.tolist())
+        self.declare_parameter("action_clip_max", PUSH_ACTION_CLIP_MAX.tolist())
 
         model_path = self.get_parameter("onnx_model_path").get_parameter_value().string_value
         push_obs_topic = self.get_parameter("push_obs_topic").get_parameter_value().string_value
@@ -60,6 +64,14 @@ class PushController(Node):
             self.get_parameter("goal_tolerance_xy").get_parameter_value().double_value
         )
         self._enabled = self.get_parameter("enabled_on_start").get_parameter_value().bool_value
+        self._action_clip_min = self._read_action_clip_parameter(
+            "action_clip_min",
+            PUSH_ACTION_CLIP_MIN,
+        )
+        self._action_clip_max = self._read_action_clip_parameter(
+            "action_clip_max",
+            PUSH_ACTION_CLIP_MAX,
+        )
         self._goal_reached = False
 
         self.get_logger().info(f"Loading push-box ONNX model: {model_path}")
@@ -188,7 +200,7 @@ class PushController(Node):
             return
 
         raw_action = self._session.run(None, {self._input_name: policy_obs})[0][0]
-        action = clip_push_action(raw_action)
+        action = clip_push_action(raw_action, self._action_clip_min, self._action_clip_max)
 
         cmd = Twist()
         cmd.linear.x = float(action[0])
@@ -201,6 +213,15 @@ class PushController(Node):
         cmd = Twist()
         self._cmd_pub.publish(cmd)
         self._last_action = np.zeros(3, dtype=np.float32)
+
+    def _read_action_clip_parameter(self, name, default):
+        values = self.get_parameter(name).get_parameter_value().double_array_value
+        if len(values) != 3:
+            self.get_logger().warn(
+                f"Ignoring {name} with length {len(values)}; expected 3. Using default {default.tolist()}."
+            )
+            return default
+        return np.asarray(values, dtype=np.float32)
 
     def _get_push_obs(self):
         if (

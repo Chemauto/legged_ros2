@@ -86,9 +86,9 @@ def build_push_observation(
     ]).astype(np.float32)
 
 
-def clip_push_action(action):
+def clip_push_action(action, clip_min=None, clip_max=None):
     return np.clip(
         np.asarray(action, dtype=np.float32),
-        PUSH_ACTION_CLIP_MIN,
-        PUSH_ACTION_CLIP_MAX,
+        PUSH_ACTION_CLIP_MIN if clip_min is None else np.asarray(clip_min, dtype=np.float32),
+        PUSH_ACTION_CLIP_MAX if clip_max is None else np.asarray(clip_max, dtype=np.float32),
     ).astype(np.float32)

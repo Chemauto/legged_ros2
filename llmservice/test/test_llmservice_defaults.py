@@ -13,7 +13,7 @@ class LlmServiceDefaultsTest(unittest.TestCase):
         with patch.object(sys, "argv", ["robot_service.py"]):
             args = robot_service.parse_args()
 
-        self.assertEqual(args.odom_topic, "/odom")
+        self.assertEqual(args.odom_topic, "/Odometry")
         self.assertEqual(args.goal_pose_topic, "/go2/goal_pose")
         self.assertEqual(args.skill_command_topic, "/go2/skill_command")
         self.assertEqual(args.cmd_vel_topic, "/cmd_vel")

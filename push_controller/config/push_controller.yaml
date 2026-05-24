@@ -2,7 +2,7 @@ push_controller_node:
   ros__parameters:
     onnx_model_path: ""
     push_obs_topic: "/push_box_obs"
-    odom_topic: "/odom"
+    odom_topic: "/Odometry"
     box_pose_topic: "/push_box_pose"
     goal_pose_topic: "/push_box_goal_pose"
     cmd_vel_topic: "/cmd_vel"
@@ -11,5 +11,7 @@ push_controller_node:
     use_external_push_obs: true
     push_obs_timeout_sec: 0.2
     stop_on_goal: true
-    goal_tolerance_xy: 0.08
-    enabled_on_start: true
+    goal_tolerance_xy: 0.12
+    enabled_on_start: false
+    action_clip_min: [-0.2, -0.3, -0.2]
+    action_clip_max: [1.0, 0.3, 0.2]

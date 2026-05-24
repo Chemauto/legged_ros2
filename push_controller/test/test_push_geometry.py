@@ -30,6 +30,15 @@ class PushGeometryTest(unittest.TestCase):
 
         np.testing.assert_allclose(action, [-0.5, 1.0, 0.5])
 
+    def test_clip_push_action_accepts_custom_bounds(self):
+        action = clip_push_action(
+            np.array([-1.0, 2.0, 1.0], dtype=np.float32),
+            clip_min=np.array([-0.5, -0.5, -0.5], dtype=np.float32),
+            clip_max=np.array([0.5, 0.5, 0.5], dtype=np.float32),
+        )
+
+        np.testing.assert_allclose(action, [-0.5, 0.5, 0.5])
+
     def test_build_push_observation_matches_training_shape(self):
         obs = build_push_observation(
             robot_position=np.array([0.0, 0.0, 0.0]),

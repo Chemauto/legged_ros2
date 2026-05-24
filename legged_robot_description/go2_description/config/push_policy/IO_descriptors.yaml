@@ -3,10 +3,10 @@ actions:
   clip:
   - - -0.5
     - 1.0
-  - - -1.0
-    - 1.0
-  - - -0.5
-    - 0.5
+  - - 0.0
+    - 0.0
+  - - -0.0
+    - 0.0
   dtype: torch.float32
   extras:
     description: High-level push-box action used as velocity command for the low-level walking policy.

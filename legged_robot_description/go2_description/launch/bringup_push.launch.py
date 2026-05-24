@@ -62,6 +62,11 @@ def generate_launch_description():
             description="16D Float32MultiArray push-box observation topic for push_controller.",
         ),
         DeclareLaunchArgument(
+            "odom_topic",
+            default_value="/Odometry",
+            description="Odometry topic used by fallback push-box observation construction.",
+        ),
+        DeclareLaunchArgument(
             "raw_push_obs_topic",
             default_value="/push_box_obs",
             description="Raw unitree_go/HeightMap push-box observation topic from MuJoCo/Unitree DDS.",
@@ -80,6 +85,16 @@ def generate_launch_description():
             "cmd_vel_topic",
             default_value=get_default_cmd_vel_topic(),
             description="Push velocity command topic shared by push_controller and rl_controller.",
+        ),
+        DeclareLaunchArgument(
+            "goal_tolerance_xy",
+            default_value="0.12",
+            description="XY tolerance in meters for stopping once the box reaches the goal.",
+        ),
+        DeclareLaunchArgument(
+            "enabled_on_start",
+            default_value="false",
+            description="Whether push_controller starts publishing policy commands before a push command or goal is received.",
         ),
         DeclareLaunchArgument(
             "high_level_onnx_model_path",
@@ -115,8 +130,11 @@ def generate_launch_description():
         launch_arguments={
             "onnx_model_path": LaunchConfiguration("high_level_onnx_model_path"),
             "push_obs_topic": LaunchConfiguration("push_obs_topic"),
+            "odom_topic": LaunchConfiguration("odom_topic"),
             "goal_pose_topic": LaunchConfiguration("goal_pose_topic"),
             "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
+            "goal_tolerance_xy": LaunchConfiguration("goal_tolerance_xy"),
+            "enabled_on_start": LaunchConfiguration("enabled_on_start"),
         }.items(),
     )
 

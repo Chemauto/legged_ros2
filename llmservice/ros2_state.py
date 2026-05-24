@@ -58,6 +58,7 @@ class Ros2TopicState(Node):
         self.skill_command_pub = self.create_publisher(String, args.skill_command_topic, 10)
         self.cmd_vel_pub = self.create_publisher(Twist, args.cmd_vel_topic, 10)
         self.goal_pose_pub = self.create_publisher(PoseStamped, args.goal_pose_topic, 10)
+        self.push_goal_pose_pub = self.create_publisher(PoseStamped, args.push_goal_pose_topic, 10)
 
         # Subscribers
         self.create_subscription(Odometry, args.odom_topic, self._on_odom, 10)
@@ -99,9 +100,11 @@ class Ros2TopicState(Node):
             self._publish_skill_command({"model_use": 1, "velocity": list(velocity), "start": True})
             return
         if skill == "push":
+            goal = push_goal(payload, self._current_box_world())
+            self._publish_push_goal_pose(goal)
             self._publish_skill_command({
                 "model_use": 3,
-                "goal": push_goal(payload, self._current_box_world()),
+                "goal": goal,
                 "start": True,
             })
             return
@@ -173,6 +176,16 @@ class Ros2TopicState(Node):
         msg.pose.position.z = goal["z"]
         msg.pose.orientation.w = 1.0
         self.goal_pose_pub.publish(msg)
+
+    def _publish_push_goal_pose(self, goal: list) -> None:
+        msg = PoseStamped()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = self.args.frame_id
+        msg.pose.position.x = float(goal[0]) if len(goal) > 0 else 0.0
+        msg.pose.position.y = float(goal[1]) if len(goal) > 1 else 0.0
+        msg.pose.position.z = float(goal[2]) if len(goal) > 2 else 0.0
+        msg.pose.orientation.w = 1.0
+        self.push_goal_pose_pub.publish(msg)
 
     def _current_box_world(self) -> dict:
         with self._lock:

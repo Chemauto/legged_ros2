@@ -21,7 +21,7 @@
 │    /push_box_obs_float → 16 维推箱子观测              │
 │                                                      │
 │  fallback 订阅:                                      │
-│    /odom                 → 机器人位姿、角速度、重力方向 │
+│    /Odometry             → 机器人位姿、角速度、重力方向 │
 │    /push_box_pose        → 箱子当前位姿                │
 │    /push_box_goal_pose   → 箱子目标位姿                │
 │                                                      │
@@ -41,6 +41,27 @@
 │  输出: 关节位置目标 → 硬件/MuJoCo                      │
 └──────────────────────────────────────────────────────┘
 ```
+
+MuJoCo 仿真时，推箱目标还有一条单独的同步链路：
+
+```text
+/go2/skill_command (model_use:3 + goal)
+        或
+/push_box_goal_pose
+        或
+/go2/goal_pose（仅当最近一次 skill_command 是 model_use:3）
+        |
+        v
+Mujoco/simulate_python/mujoco_ros2_bridge.py
+        |
+        v
+/tmp/mujoco_go2_control/push_box_goal.txt
+        |
+        v
+PushBoxSdk2Bridge 读取目标后发布 rt/push_box_obs
+```
+
+MuJoCo 内部不再保留 `(1.7, 0.0, 0.12)` 这种默认推箱目标。没有外部目标时，MuJoCo 不发布带目标的 `rt/push_box_obs`，避免一启动就开始推箱。`mujoco_ros2_bridge.py` 启动时会自动清理旧的 `push_box_goal.txt`，收到 stop/idle/非 push 技能时也会清理推箱目标。
 
 ## 策略文件
 
@@ -82,6 +103,20 @@ legged_robot_description/go2_description/config/push_policy/low_level_policy/IO_
 | 1 | `linear.y` | [-1.0, 1.0] |
 | 2 | `angular.z` | [-0.5, 0.5] |
 
+默认裁剪范围在 `push_controller/config/push_controller.yaml` 中配置：
+
+```yaml
+action_clip_min: [-0.5, -1.0, -0.5]
+action_clip_max: [1.0, 1.0, 0.5]
+```
+
+实机如果需要更保守的推箱速度，可以改成：
+
+```yaml
+action_clip_min: [-0.5, -0.5, -0.5]
+action_clip_max: [0.5, 0.5, 0.5]
+```
+
 ## 编译
 
 ```bash
@@ -115,12 +150,21 @@ ros2 control switch_controllers \
 - 启动 `push_box_obs_bridge_node`，把原始 `/push_box_obs` 转成 `/push_box_obs_float`
 - include `push_controller/launch/push_controller.launch.py`，加载高层模型 `go2_description/config/push_policy/policy.onnx`，并让高层输出 `/push_cmd_vel`
 
+默认 `enabled_on_start:=false`。重启 `bringup_push.launch.py` 后，`push_controller` 不应在收到新的 push 命令或 `/push_box_goal_pose` 前主动执行旧任务。
+
+如果是在 MuJoCo 仿真中测试，需要同时重启 `/home/xcj/work/Sim2Real/Mujoco/run_mujoco.sh`，因为推箱目标桥接在 MuJoCo 进程里：
+
+```bash
+cd /home/xcj/work/Sim2Real/Mujoco
+bash run_mujoco.sh
+```
+
 ## 话题要求
 
 推荐最小话题：
 
 ```text
-/odom
+/Odometry
 /height_sampler_node/height_map
 /push_box_obs
 /push_box_obs_float
@@ -144,7 +188,7 @@ std_msgs/msg/Float32MultiArray
 如果没有 `/push_box_obs`，则需要 fallback 话题：
 
 ```text
-/odom
+/Odometry
 /height_sampler_node/height_map
 /push_box_pose
 /push_box_goal_pose
@@ -159,7 +203,54 @@ geometry_msgs/msg/PoseStamped
 
 ## 发送推箱目标
 
-`push_controller` 没有订阅单独的字符串命令。它需要“箱子当前位姿”和“箱子目标位姿”来推理速度：
+### MuJoCo 推荐命令
+
+如果是 MuJoCo 仿真，推荐直接用 `/go2/skill_command` 发送推箱技能和目标点。目标数组为：
+
+```text
+[x, y, z, yaw]
+```
+
+例如目标在世界坐标系前方 1.5m：
+
+```bash
+ros2 topic pub --once /go2/skill_command std_msgs/String \
+  "{data: '{\"model_use\": 3, \"skill\": \"push\", \"goal\": [1.5, 0.0, 0.0, 0.0], \"start\": true}'}"
+```
+
+这条命令会做两件事：
+
+- `push_controller_node` 收到 push 技能后使能推箱输出
+- MuJoCo 的 `mujoco_ros2_bridge.py` 将目标写入 `/tmp/mujoco_go2_control/push_box_goal.txt`，随后 `PushBoxSdk2Bridge` 开始发布带目标的 `rt/push_box_obs`
+
+也可以继续直接发 ROS fallback 目标：
+
+```bash
+ros2 topic pub --once /push_box_goal_pose geometry_msgs/PoseStamped \
+  "{header: {frame_id: 'map'}, pose: {position: {x: 1.5, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}"
+```
+
+如果只发 `/go2/goal_pose`，需要先让 bridge 知道当前是 push 技能：
+
+```bash
+ros2 topic pub --once /go2/skill_command std_msgs/String \
+  "{data: '{\"model_use\": 3, \"skill\": \"push\", \"start\": true}'}"
+
+ros2 topic pub --once /go2/goal_pose geometry_msgs/PoseStamped \
+  "{header: {frame_id: 'map'}, pose: {position: {x: 1.5, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}"
+```
+
+检查目标是否已经同步到 MuJoCo：
+
+```bash
+cat /tmp/mujoco_go2_control/push_box_goal.txt
+ros2 topic hz /push_box_obs_float
+ros2 topic hz /push_cmd_vel
+```
+
+### 实机或 fallback 方式
+
+`push_controller` 需要“箱子当前位姿”和“箱子目标位姿”来推理速度：
 
 ```text
 /push_box_pose       当前箱子位姿
@@ -194,6 +285,63 @@ python demos/run_demo.py push_climb
 
 其中 `push_climb` 会先发送 `push(x=1.5, y=0.0, yaw=0.0)`，再发送 `climb(height=0.5)`。
 
+## 停止推箱
+
+### 自动停止
+
+`push_controller` 会根据观测中的 `goal_in_box_frame_pos` 判断箱子是否到达目标。默认 `goal_tolerance_xy=0.12`，也就是箱子目标在箱子坐标系下的 x/y 距离小于 12cm 时，高层停止继续推理并持续向 `/push_cmd_vel` 发布零速度。
+
+检查是否已经停止输出运动速度：
+
+```bash
+ros2 topic echo /push_cmd_vel
+```
+
+应看到：
+
+```text
+linear:
+  x: 0.0
+  y: 0.0
+angular:
+  z: 0.0
+```
+
+### 手动安全停止
+
+实机上最可靠的停止方式是切回站立控制器：
+
+```bash
+ros2 control switch_controllers \
+  --deactivate rl_controller \
+  --activate stand_static_controller \
+  --strict
+```
+
+如果只是想让速度归零，但不切控制器，可以临时发布一次零速到推箱速度话题：
+
+```bash
+ros2 topic pub --once /push_cmd_vel geometry_msgs/Twist \
+  "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+```
+
+注意：如果 `push_controller_node` 仍在运行且观测仍有效，它下一帧可能会继续发布策略速度。因此实机安全停止优先使用 controller 切换。
+
+### 通过技能命令停止
+
+`push_controller_node` 订阅 `/go2/skill_command`。收到非 push 技能、`start:false`、`idle`、`stop` 或 `off` 时，会禁用推箱输出并发布零速度。可以手动发送：
+
+```bash
+ros2 topic pub --once /go2/skill_command std_msgs/String \
+  "{data: '{\"model_use\": 0, \"skill\": \"stop\", \"start\": false}'}"
+```
+
+随后再确认：
+
+```bash
+ros2 topic echo --once /push_cmd_vel
+```
+
 ## 自定义参数
 
 ```bash
@@ -202,7 +350,10 @@ ros2 launch go2_description bringup_push.launch.py \
   raw_push_obs_topic:=/push_box_obs \
   converted_push_obs_topic:=/push_box_obs_float \
   push_obs_topic:=/push_box_obs_float \
+  odom_topic:=/Odometry \
   cmd_vel_topic:=/push_cmd_vel \
+  goal_tolerance_xy:=0.12 \
+  enabled_on_start:=false \
   goal_pose_topic:=/custom_push_box_goal_pose \
   use_rviz:=false \
   use_rqt_cm:=false
@@ -257,6 +408,14 @@ ros2 topic hz /push_box_pose
 ros2 topic hz /push_box_goal_pose
 ```
 
+MuJoCo 仿真还需要确认目标桥接文件已经生成：
+
+```bash
+cat /tmp/mujoco_go2_control/push_box_goal.txt
+```
+
+如果文件不存在，说明还没有发送 `/go2/skill_command` 的 push goal，或者没有发送 `/push_box_goal_pose`。
+
 ## 真实部署注意事项
 
 ### 推箱策略部署
@@ -275,11 +434,13 @@ ros2 topic info /push_cmd_vel -v
 
 4. `/push_box_obs_float` 必须持续发布 16 维观测。`push_controller` 默认 0.2 秒超时，观测断流后不会继续复用旧值。实机如果没有直接的 16 维推箱观测，就必须持续提供 `/push_box_pose` 和 `/push_box_goal_pose` fallback 数据。
 
-5. `/push_box_pose`、`/push_box_goal_pose` 和 `/odom` 必须在同一世界坐标系下。代码当前不读取 `header.frame_id` 做 TF 变换，只直接使用数值，所以 `map`、`odom` 名字本身不重要，重要的是数值必须一致。
+5. `/push_box_pose`、`/push_box_goal_pose` 和 `/Odometry` 必须在同一世界坐标系下。代码当前不读取 `header.frame_id` 做 TF 变换，只直接使用数值，所以 `map`、`odom` 名字本身不重要，重要的是数值必须一致。
 
-6. 高层策略没有“到达目标自动停止并切回站立”的状态机。任务完成后，上层需要停止发送推箱任务、切回静态控制器，或让 `llmservice`/任务管理器发送下一步技能。不要在实机上长期让旧目标和旧箱子位姿继续驱动策略。
+6. MuJoCo 仿真下，`/push_box_goal_pose` 和 `/go2/skill_command` 目标会同步到 `/tmp/mujoco_go2_control/push_box_goal.txt`。实机部署不依赖这个文件，实机只需要 ROS/DDS 观测链路正确。
 
-7. Docker 内需要提前具备 `onnxruntime` 和 `unitree_go` 消息包。启动前至少验证：
+7. 高层策略会在 `goal_tolerance_xy` 范围内发布零速度，但不会自动切回站立控制器。任务完成后，上层仍应停止发送推箱任务、切回静态控制器，或让 `llmservice`/任务管理器发送下一步技能。不要在实机上长期让旧目标和旧箱子位姿继续驱动策略。
+
+8. Docker 内需要提前具备 `onnxruntime` 和 `unitree_go` 消息包。启动前至少验证：
 
 ```bash
 python3 -c "import onnxruntime; print(onnxruntime.__version__)"
@@ -326,6 +487,27 @@ ros2 topic echo --once /height_sampler_node/height_map
 先看 `/push_cmd_vel` 是否有 `push_controller_node` 发布者，并确认 `rl_controller` 订阅的也是 `/push_cmd_vel`。如果没有速度输出，通常是 `push_controller_node` 没启动、ONNX 加载失败、缺少 `onnxruntime`，或缺少有效推箱子观测。
 
 如果 `ros2 topic info /push_box_obs -v` 显示 `unitree_go/msg/HeightMap`，这是正常的原始观测；不要让 `push_controller` 直接订阅这个话题。默认 bringup 会订阅 `/push_box_obs_float`，避免 `/push_box_obs` 出现 `Float32MultiArray` 和 `HeightMap` 同名多类型冲突。
+
+MuJoCo 仿真中，如果刚删除了内部默认 push goal，只发 `/push_box_goal_pose` 后仍没反应，先确认 MuJoCo 已经重启并加载了新 bridge 代码：
+
+```bash
+cd /home/xcj/work/Sim2Real/Mujoco
+bash run_mujoco.sh
+```
+
+然后检查目标文件和观测：
+
+```bash
+cat /tmp/mujoco_go2_control/push_box_goal.txt
+ros2 topic hz /push_box_obs_float
+ros2 topic hz /push_cmd_vel
+```
+
+正常情况下，`mujoco_ros2_bridge.py` 启动时会自动清理旧目标文件。如果调试时怀疑旧进程没有退出干净，也可以手动清理：
+
+```bash
+rm -f /tmp/mujoco_go2_control/push_box_goal.txt
+```
 
 ### `/push_box_obs_float` 有一帧后停止
 
