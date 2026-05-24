@@ -16,6 +16,7 @@ spec.loader.exec_module(geometry)
 build_push_observation = geometry.build_push_observation
 clip_push_action = geometry.clip_push_action
 is_fresh = geometry.is_fresh
+push_goal_reached = geometry.push_goal_reached
 quat_to_yaw = geometry.quat_to_yaw
 
 
@@ -52,6 +53,15 @@ class PushGeometryTest(unittest.TestCase):
     def test_is_fresh_rejects_stale_timestamps(self):
         self.assertTrue(is_fresh(now_sec=1.20, stamp_sec=1.10, timeout_sec=0.20))
         self.assertFalse(is_fresh(now_sec=1.31, stamp_sec=1.10, timeout_sec=0.20))
+
+    def test_push_goal_reached_uses_goal_in_box_xy_distance(self):
+        obs = np.zeros(16, dtype=np.float32)
+        obs[11:14] = [0.03, 0.04, 0.5]
+
+        self.assertTrue(push_goal_reached(obs, tolerance_xy=0.08))
+
+        obs[11:14] = [0.09, 0.0, 0.0]
+        self.assertFalse(push_goal_reached(obs, tolerance_xy=0.08))
 
 
 if __name__ == "__main__":

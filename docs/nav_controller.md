@@ -124,6 +124,15 @@ ros2 launch go2_description bringup_nav.launch.py \
   use_rqt_cm:=false
 ```
 
+当前 `/home/xcj/work/Sim2Real/Mujoco/run_mujoco.sh` 会让 MuJoCo bridge 默认发布 `/Odometry`，与 `bringup_nav.launch.py` 默认值一致。如果使用旧版 MuJoCo bridge 仍发布 `/odom`，再额外传：
+
+```bash
+ros2 launch go2_description bringup_nav.launch.py \
+  odom_topic:=/odom \
+  use_rviz:=false \
+  use_rqt_cm:=false
+```
+
 **Sim2Real (真实机器人):**
 
 ```bash
@@ -147,7 +156,7 @@ ros2 launch go2_description bringup_nav.launch.py \
 ```bash
 # 世界坐标系下的目标位姿 (x, y, heading)
 ros2 topic pub --once /go2/goal_pose geometry_msgs/PoseStamped \
-  "{header: {frame_id: 'map'}, pose: {position: {x: 0.0, y: 2.0, z: 0.0}, orientation: {w: 0.0}}}"
+  "{header: {frame_id: 'odom'}, pose: {position: {x: 1.5, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}"
 ```
 
 ### 5. 自定义参数
@@ -157,6 +166,8 @@ ros2 topic pub --once /go2/goal_pose geometry_msgs/PoseStamped \
 ```bash
 ros2 launch go2_description bringup_nav.launch.py \
   high_level_onnx_model_path:=/path/to/your/high_level_policy.onnx \
+  odom_topic:=/Odometry \
+  heightmap_topic:=/height_sampler_node/height_map \
   goal_pose_topic:=/custom/goal_topic \
   use_rviz:=false \
   use_rqt_cm:=false
@@ -167,6 +178,8 @@ ros2 launch go2_description bringup_nav.launch.py \
 ```bash
 ros2 launch nav_controller nav_controller.launch.py \
   onnx_model_path:=/path/to/your/policy.onnx \
+  odom_topic:=/Odometry \
+  heightmap_topic:=/height_sampler_node/height_map \
   goal_pose_topic:=/custom/goal_topic
 ```
 
@@ -177,7 +190,7 @@ ros2 launch nav_controller nav_controller.launch.py \
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | `onnx_model_path` | "" (由 launch 文件覆盖) | ONNX 模型路径 |
-| `odom_topic` | `/odom` | 里程计 topic |
+| `odom_topic` | `/Odometry` | 里程计 topic；实机验证版使用该话题，MuJoCo 仿真通常覆盖为 `/odom` |
 | `goal_pose_topic` | `/go2/goal_pose` | 目标位姿 topic |
 | `heightmap_topic` | `/height_sampler_node/height_map` | 高程图 topic |
 | `cmd_vel_topic` | `/cmd_vel` | 速度命令 topic；`bringup_nav.launch.py` 会覆盖为 `/nav_cmd_vel` |
@@ -188,7 +201,7 @@ ros2 launch nav_controller nav_controller.launch.py \
 
 ## 坐标系说明
 
-- **目标位姿** (`/go2/goal_pose`): 世界坐标系下的绝对位姿
+- **目标位姿** (`/go2/goal_pose`): 世界坐标系下的绝对位姿，必须和 `odom_topic` 的坐标数值一致
 - **观测中的 pose_command**: 机体坐标系下的相对偏移 (节点自动做 world→body 变换)
 - **projected_gravity**: 机体坐标系下的重力向量 (从 odom 四元数计算)
 
@@ -208,6 +221,8 @@ dy_body = -sin(yaw) * dx_world + cos(yaw) * dy_world
 ## 注意事项
 
 1. **ONNX 模型兼容性**: 确保导出的 ONNX 模型输入输出维度与训练时一致 (197 维输入, 3 维输出)
-2. **高程图格式**: MuJoCo 仿真器的高程图配置 (size, resolution) 需与训练时一致
-3. **低层策略**: `bringup_nav.launch.py` 会让 `legged_rl_controller` 使用 `nav_low_level` 策略，即 `go2_description/config/nav_policy/low_level_policy`
-4. **目标位姿坐标系**: 发送到 `/go2/goal_pose` 的位姿必须是世界坐标系下的绝对值
+2. **里程计话题**: 当前实机验证版和本项目 MuJoCo `run_mujoco.sh` 都使用 `/Odometry`。只有旧版 MuJoCo bridge 发布 `/odom` 时，才需要启动时传 `odom_topic:=/odom`
+3. **高程图格式**: MuJoCo/实机的高程图配置 (size, resolution, 安装坐标) 需与训练时一致
+4. **低层策略**: `bringup_nav.launch.py` 会让 `legged_rl_controller` 使用 `nav_low_level` 策略，即 `go2_description/config/nav_policy/low_level_policy`
+5. **目标位姿坐标系**: 发送到 `/go2/goal_pose` 的位姿必须和 `odom_topic` 在同一坐标系下，代码不会根据 `header.frame_id` 做 TF 转换
+6. **速度话题隔离**: 导航 bringup 默认让高层发布 `/nav_cmd_vel`，低层订阅 `/nav_cmd_vel`，不要让遥控器 `/cmd_vel` 和导航高层抢同一个速度话题

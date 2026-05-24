@@ -183,14 +183,46 @@ def launch_setup(context, *args, **kwargs):
         arguments=["sit_static_controller", "-c", "/controller_manager", "--inactive"],
     )
 
-    delay_after_stand_static_controller_spawner = RegisterEventHandler(
+    spawn_joint_state_broadcaster_after_stand = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=stand_static_controller_spawner,
             on_exit=[
                 joint_state_broadcaster_spawner,
+            ],
+        )
+    )
+
+    spawn_imu_state_broadcaster_after_joint_state = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[
                 imu_state_broadcaster_spawner,
+            ],
+        )
+    )
+
+    spawn_rl_controller_after_imu_state = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=imu_state_broadcaster_spawner,
+            on_exit=[
                 rl_controller_spawner,
+            ],
+        )
+    )
+
+    spawn_sit_static_controller_after_rl_controller = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=rl_controller_spawner,
+            on_exit=[
                 sit_static_controller_spawner,
+            ],
+        )
+    )
+
+    start_optional_tools_after_sit_static_controller = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=sit_static_controller_spawner,
+            on_exit=[
                 rviz_node,
                 rqt_controller_manager,
             ],
@@ -201,7 +233,11 @@ def launch_setup(context, *args, **kwargs):
         main_loop_node,
         robot_state_pub_node,
         stand_static_controller_spawner,
-        delay_after_stand_static_controller_spawner,
+        spawn_joint_state_broadcaster_after_stand,
+        spawn_imu_state_broadcaster_after_joint_state,
+        spawn_rl_controller_after_imu_state,
+        spawn_sit_static_controller_after_rl_controller,
+        start_optional_tools_after_sit_static_controller,
     ]
 
 

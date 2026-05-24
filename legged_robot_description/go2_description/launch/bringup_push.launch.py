@@ -1,7 +1,8 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -9,8 +10,20 @@ def get_low_level_policy_profile():
     return "push_low_level"
 
 
+def get_default_cmd_vel_topic():
+    return "/push_cmd_vel"
+
+
+def get_default_converted_push_obs_topic():
+    return "/push_box_obs_float"
+
+
 def get_high_level_policy_path_parts():
     return ("config", "push_policy", "policy.onnx")
+
+
+def get_high_level_start_delay_sec():
+    return 5.0
 
 
 def get_high_level_policy_path():
@@ -45,13 +58,28 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "push_obs_topic",
+            default_value=get_default_converted_push_obs_topic(),
+            description="16D Float32MultiArray push-box observation topic for push_controller.",
+        ),
+        DeclareLaunchArgument(
+            "raw_push_obs_topic",
             default_value="/push_box_obs",
-            description="16D external push-box observation topic.",
+            description="Raw unitree_go/HeightMap push-box observation topic from MuJoCo/Unitree DDS.",
+        ),
+        DeclareLaunchArgument(
+            "converted_push_obs_topic",
+            default_value=get_default_converted_push_obs_topic(),
+            description="Converted std_msgs/Float32MultiArray push-box observation topic.",
         ),
         DeclareLaunchArgument(
             "goal_pose_topic",
             default_value="/push_box_goal_pose",
             description="Fallback push-box goal pose topic.",
+        ),
+        DeclareLaunchArgument(
+            "cmd_vel_topic",
+            default_value=get_default_cmd_vel_topic(),
+            description="Push velocity command topic shared by push_controller and rl_controller.",
         ),
         DeclareLaunchArgument(
             "high_level_onnx_model_path",
@@ -67,7 +95,19 @@ def generate_launch_description():
             "use_rviz": LaunchConfiguration("use_rviz"),
             "use_rqt_cm": LaunchConfiguration("use_rqt_cm"),
             "enable_lowlevel_write": LaunchConfiguration("enable_lowlevel_write"),
+            "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
         }.items(),
+    )
+
+    push_obs_bridge = Node(
+        package="push_controller",
+        executable="push_box_obs_bridge_node",
+        name="push_box_obs_bridge_node",
+        output="screen",
+        parameters=[{
+            "input_topic": LaunchConfiguration("raw_push_obs_topic"),
+            "output_topic": LaunchConfiguration("converted_push_obs_topic"),
+        }],
     )
 
     high_level_push = IncludeLaunchDescription(
@@ -76,7 +116,13 @@ def generate_launch_description():
             "onnx_model_path": LaunchConfiguration("high_level_onnx_model_path"),
             "push_obs_topic": LaunchConfiguration("push_obs_topic"),
             "goal_pose_topic": LaunchConfiguration("goal_pose_topic"),
+            "cmd_vel_topic": LaunchConfiguration("cmd_vel_topic"),
         }.items(),
     )
 
-    return LaunchDescription(declared_arguments + [low_level_bringup, high_level_push])
+    delayed_high_level_push = TimerAction(
+        period=get_high_level_start_delay_sec(),
+        actions=[push_obs_bridge, high_level_push],
+    )
+
+    return LaunchDescription(declared_arguments + [low_level_bringup, delayed_high_level_push])

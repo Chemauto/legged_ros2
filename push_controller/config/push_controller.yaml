@@ -6,6 +6,10 @@ push_controller_node:
     box_pose_topic: "/push_box_pose"
     goal_pose_topic: "/push_box_goal_pose"
     cmd_vel_topic: "/cmd_vel"
+    skill_command_topic: "/go2/skill_command"
     control_hz: 5.0
     use_external_push_obs: true
     push_obs_timeout_sec: 0.2
+    stop_on_goal: true
+    goal_tolerance_xy: 0.08
+    enabled_on_start: true

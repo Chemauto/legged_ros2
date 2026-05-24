@@ -55,6 +55,30 @@ class BringupNavLaunchTest(unittest.TestCase):
             "/cmd_vel",
         )
 
+    def test_nav_launch_real_robot_default_uses_odometry_topic(self):
+        self.assertEqual(
+            self.bringup_nav.get_default_odom_topic(),
+            "/Odometry",
+        )
+
+    def test_nav_controller_standalone_default_uses_odometry_topic(self):
+        self.assertEqual(
+            self.nav_controller_launch.get_default_odom_topic(),
+            "/Odometry",
+        )
+
+    def test_nav_launch_uses_heightmap_topic(self):
+        self.assertEqual(
+            self.bringup_nav.get_default_heightmap_topic(),
+            "/height_sampler_node/height_map",
+        )
+
+    def test_nav_controller_standalone_default_uses_heightmap_topic(self):
+        self.assertEqual(
+            self.nav_controller_launch.get_default_heightmap_topic(),
+            "/height_sampler_node/height_map",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

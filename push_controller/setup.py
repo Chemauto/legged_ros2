@@ -21,6 +21,7 @@ setup(
     entry_points={
         "console_scripts": [
             "push_controller_node = push_controller.push_controller_node:main",
+            "push_box_obs_bridge_node = push_controller.push_box_obs_bridge_node:main",
         ],
     },
 )

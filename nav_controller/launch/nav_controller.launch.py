@@ -13,6 +13,14 @@ def get_default_cmd_vel_topic():
     return "/cmd_vel"
 
 
+def get_default_odom_topic():
+    return "/Odometry"
+
+
+def get_default_heightmap_topic():
+    return "/height_sampler_node/height_map"
+
+
 def get_default_model_path():
     return PathJoinSubstitution(
         [FindPackageShare("go2_description"), *get_default_model_path_parts()]
@@ -36,6 +44,16 @@ def generate_launch_description():
             description="Topic for goal pose commands",
         ),
         DeclareLaunchArgument(
+            "odom_topic",
+            default_value=get_default_odom_topic(),
+            description="Topic for robot odometry",
+        ),
+        DeclareLaunchArgument(
+            "heightmap_topic",
+            default_value=get_default_heightmap_topic(),
+            description="Topic for local height map observations",
+        ),
+        DeclareLaunchArgument(
             "cmd_vel_topic",
             default_value=get_default_cmd_vel_topic(),
             description="Topic for velocity commands",
@@ -49,6 +67,8 @@ def generate_launch_description():
                 config_file,
                 {"onnx_model_path": LaunchConfiguration("onnx_model_path")},
                 {"goal_pose_topic": LaunchConfiguration("goal_pose_topic")},
+                {"odom_topic": LaunchConfiguration("odom_topic")},
+                {"heightmap_topic": LaunchConfiguration("heightmap_topic")},
                 {"cmd_vel_topic": LaunchConfiguration("cmd_vel_topic")},
             ],
         ),

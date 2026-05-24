@@ -7,6 +7,7 @@ PUSH_OBS_DIM = 16
 PUSH_POLICY_OBS_DIM = 19
 PUSH_ACTION_CLIP_MIN = np.array([-0.5, -1.0, -0.5], dtype=np.float32)
 PUSH_ACTION_CLIP_MAX = np.array([1.0, 1.0, 0.5], dtype=np.float32)
+PUSH_GOAL_IN_BOX_POS_SLICE = slice(11, 14)
 
 
 def quat_to_yaw(qx, qy, qz, qw):
@@ -34,6 +35,18 @@ def wrap_to_pi(angle):
 
 def is_fresh(now_sec, stamp_sec, timeout_sec):
     return 0.0 <= now_sec - stamp_sec <= timeout_sec
+
+
+def push_goal_distance_xy(push_obs):
+    obs = np.asarray(push_obs, dtype=np.float32).flatten()
+    if obs.size < PUSH_OBS_DIM:
+        return math.inf
+    goal_in_box_pos = obs[PUSH_GOAL_IN_BOX_POS_SLICE]
+    return float(math.hypot(float(goal_in_box_pos[0]), float(goal_in_box_pos[1])))
+
+
+def push_goal_reached(push_obs, tolerance_xy):
+    return push_goal_distance_xy(push_obs) <= float(tolerance_xy)
 
 
 def yaw_to_sin_cos(yaw):

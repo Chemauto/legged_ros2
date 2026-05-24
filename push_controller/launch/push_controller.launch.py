@@ -15,6 +15,10 @@ def get_default_model_path():
     )
 
 
+def get_default_cmd_vel_topic():
+    return "/cmd_vel"
+
+
 def generate_launch_description():
     config_file = PathJoinSubstitution(
         [FindPackageShare("push_controller"), "config", "push_controller.yaml"]
@@ -36,6 +40,11 @@ def generate_launch_description():
             default_value="/push_box_goal_pose",
             description="Fallback goal pose topic when external push observations are disabled.",
         ),
+        DeclareLaunchArgument(
+            "cmd_vel_topic",
+            default_value=get_default_cmd_vel_topic(),
+            description="Velocity command topic published by push_controller.",
+        ),
         Node(
             package="push_controller",
             executable="push_controller_node",
@@ -46,6 +55,7 @@ def generate_launch_description():
                 {"onnx_model_path": LaunchConfiguration("onnx_model_path")},
                 {"push_obs_topic": LaunchConfiguration("push_obs_topic")},
                 {"goal_pose_topic": LaunchConfiguration("goal_pose_topic")},
+                {"cmd_vel_topic": LaunchConfiguration("cmd_vel_topic")},
             ],
         ),
     ])
