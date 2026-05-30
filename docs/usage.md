@@ -63,7 +63,9 @@
     ros2 control list_controllers
     ```
 
-    正常情况下应看到 `imu_state_broadcaster` 和 `joint_state_broadcaster` 为 `active`，三个控制器已加载但为 `inactive`：
+    正常ros2 launch go2_description bringup_push.launch.py \
+  use_rviz:=false \
+  use_rqt_cm:=false情况下应看到 `imu_state_broadcaster` 和 `joint_state_broadcaster` 为 `active`，三个控制器已加载但为 `inactive`：
 
     ```text
     stand_static_controller inactive

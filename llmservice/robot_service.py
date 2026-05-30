@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--goal-pose-topic", default="/go2/goal_pose")
     parser.add_argument("--push-goal-pose-topic", default="/push_box_goal_pose")
     parser.add_argument("--odom-topic", default="/Odometry")
-    parser.add_argument("--box-pose-topic", default="/go2/box_pose")
+    parser.add_argument("--box-pose-topic", default="/push_box_pose")
     parser.add_argument("--skill-status-topic", default="/go2/skill_status")
     parser.add_argument("--scene-objects-topic", default="/go2/scene_objects")
     parser.add_argument("--frame-id", default="odom")
